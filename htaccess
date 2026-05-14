@@ -1,0 +1,34 @@
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
+#   RewriteBase /
+
+#   # ✅ Allow static assets (JS, CSS, fonts, images)
+#   RewriteCond %{REQUEST_URI} ^/_next/ [OR]
+#   RewriteCond %{REQUEST_URI} ^/static/ [OR]
+#   RewriteCond %{REQUEST_URI} \.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff2?|ttf|eot)$
+#   RewriteRule .* - [L]
+
+#   # ✅ Fallback to index.html for React routes only
+#   RewriteRule ^index\.html$ - [L]
+#   RewriteCond %{REQUEST_FILENAME} !-f
+#   RewriteCond %{REQUEST_FILENAME} !-d
+#   RewriteRule . /index.html [L]
+# </IfModule>
+
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # ✅ Allow Next.js static assets and image files to load normally
+  RewriteCond %{REQUEST_URI} ^/_next/ [OR]
+  RewriteCond %{REQUEST_URI} ^/static/ [OR]
+  RewriteCond %{REQUEST_URI} \.(png|jpg|jpeg|gif|ico|svg|webp)$
+  RewriteRule .* - [L]
+
+  # ✅ Fallback for React routes only
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>

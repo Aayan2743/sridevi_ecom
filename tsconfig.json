@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/page.jsx", "components/LoadingAnimation.jsx", "components/AdBanner.jsx", "components/CategorySection.jsx", "components/ProductCard.jsx", "contexts/WishlistContext.jsx", "app/about-us/page.jsx", "app/bath-powder-story/page.jsx", "app/product/[slug]/page.jsx", "app/product/[slug]/ProductClient.jsx", "app/products/page.jsx", "app/products/ProductsClient.jsx", "app/success-story/page.jsx", "app/wishlist/page.jsx", "app/layout.jsx", "app/LayoutClient.jsx", "app/not-found.jsx", "components/Breadcrumb.jsx", "components/Cart.jsx", "components/CategoryFilter.jsx", "components/CheckoutFlow.jsx", "components/EnhancedSidebar.jsx", "components/Footer.jsx", "components/Header.jsx", "components/ImageMarquee.jsx", "components/LoginModal.jsx", "components/ProductDetail.jsx", "components/SearchDropdown.jsx", "contexts/AuthContext.jsx", "contexts/CartContext.jsx", "app/products/[slug]/page.jsx", "lib/services/product.service.ts"],
+  "exclude": ["node_modules"]
+}
