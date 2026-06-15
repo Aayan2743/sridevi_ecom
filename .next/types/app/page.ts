@@ -1,4 +1,4 @@
-// File: D:\Limra Projects\ecom Version 1\HERBAL_NEW_UI_3-5\app\page.jsx
+// File: D:\Limra Projects\Sri Devi Herbals\june\HERBAL_NEW_UI_3-5\app\page.jsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Minus, Plus, Trash2, Gift, ChevronDown, ChevronUp, ShoppingBag } from "lucide-react";
+import {
+  X,
+  Minus,
+  Plus,
+  Trash2,
+  Gift,
+  ChevronDown,
+  ChevronUp,
+  ShoppingBag,
+} from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import CheckoutFlow from "./CheckoutFlow";
@@ -21,18 +30,19 @@ export default function Cart({ isOpen, onClose }) {
     { amount: 999, discount: "8% OFF", achieved: false },
     { amount: 1299, discount: "10% OFF + Gift", achieved: false },
     { amount: 1599, discount: "12% OFF + Gift", achieved: false },
-    { amount: 2999, discount: "Free Gift ₹1218", achieved: false }
+    { amount: 2999, discount: "Free Gift ₹1218", achieved: false },
   ];
 
   const totalPrice = getTotalPrice();
-  const currentMilestone = milestones.find(m => totalPrice >= m.amount) || milestones[0];
-  const nextMilestone = milestones.find(m => totalPrice < m.amount);
-  const progressPercentage = nextMilestone 
-    ? (totalPrice / nextMilestone.amount) * 100 
+  const currentMilestone =
+    milestones.find((m) => totalPrice >= m.amount) || milestones[0];
+  const nextMilestone = milestones.find((m) => totalPrice < m.amount);
+  const progressPercentage = nextMilestone
+    ? (totalPrice / nextMilestone.amount) * 100
     : 100;
 
   // Update milestone achievements
-  milestones.forEach(milestone => {
+  milestones.forEach((milestone) => {
     milestone.achieved = totalPrice >= milestone.amount;
   });
 
@@ -57,17 +67,17 @@ export default function Cart({ isOpen, onClose }) {
       {/* CART OVERLAY */}
       <div className="fixed inset-0 z-50">
         {/* BACKDROP */}
-        <div 
+        <div
           className={`absolute inset-0 bg-black transition-opacity duration-300 ${
-            isAnimating ? 'opacity-0' : 'opacity-50'
-          }`} 
-          onClick={onClose} 
+            isAnimating ? "opacity-0" : "opacity-50"
+          }`}
+          onClick={onClose}
         />
 
         {/* CART */}
         <div
           className={`absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl transform transition-transform duration-300 ease-out ${
-            isAnimating ? 'translate-x-full' : 'translate-x-0'
+            isAnimating ? "translate-x-full" : "translate-x-0"
           }`}
           onClick={(e) => e.stopPropagation()}
         >
@@ -77,7 +87,7 @@ export default function Cart({ isOpen, onClose }) {
               <h2 className="text-lg font-semibold text-gray-800">
                 YOUR CART ({getTotalItems()})
               </h2>
-              <button 
+              <button
                 onClick={onClose}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               >
@@ -86,53 +96,6 @@ export default function Cart({ isOpen, onClose }) {
             </div>
 
             {/* MILESTONE PROGRESS */}
-            {cart.length > 0 && (
-              <div className="bg-red-900 text-white p-4">
-                <div className="text-center font-medium mb-3">
-                  Yay! You&apos;ve unlocked extra discounts!
-                </div>
-                
-                <div className="bg-gray-100 rounded-lg p-4 text-gray-800">
-                  <div className="text-center text-sm font-medium mb-3">
-                    You have successfully reached the milestone
-                  </div>
-                  
-                  {/* Progress Bar with connecting line */}
-                  <div className="relative mb-4">
-                    {/* Connecting line */}
-                    <div className="absolute top-3 left-0 right-0 h-1 bg-gray-300 rounded-full">
-                      <div 
-                        className="h-full bg-red-700 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-                      />
-                    </div>
-                    
-                    {/* Milestone points */}
-                    <div className="flex justify-between items-center relative">
-                      {milestones.map((milestone, index) => (
-                        <div key={index} className="flex flex-col items-center">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 bg-white relative z-10 ${
-                            milestone.achieved 
-                              ? 'border-red-900 bg-red-900 text-white' 
-                              : 'border-gray-300 text-gray-600'
-                          }`}>
-                            {milestone.achieved ? (
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            ) : null}
-                          </div>
-                          <div className="text-xs mt-2 text-center">
-                            <div className="font-semibold">₹{milestone.amount}</div>
-                            <div className="text-gray-600 text-xs">{milestone.discount}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* ITEMS */}
             <div className="flex-1 overflow-y-auto p-4">
@@ -159,7 +122,7 @@ export default function Cart({ isOpen, onClose }) {
                           {item.name}
                         </h3>
                         <p className="text-xs text-gray-500 mb-2">1 Combo</p>
-                        
+
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <button
@@ -170,7 +133,7 @@ export default function Cart({ isOpen, onClose }) {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-                            
+
                             <div className="flex items-center border border-gray-200 rounded-md">
                               <button
                                 onClick={() =>
@@ -203,14 +166,20 @@ export default function Cart({ isOpen, onClose }) {
                               </button>
                             </div>
                           </div>
-                          
+
                           <div className="text-right">
-                            <div className="font-bold text-lg text-gray-900">₹{(item.price * item.quantity).toLocaleString()}</div>
-                            {item.originalPrice && item.originalPrice > item.price && (
-                              <div className="text-xs text-gray-400 line-through">
-                                ₹{(item.originalPrice * item.quantity).toLocaleString()}
-                              </div>
-                            )}
+                            <div className="font-bold text-lg text-gray-900">
+                              ₹{(item.price * item.quantity).toLocaleString()}
+                            </div>
+                            {item.originalPrice &&
+                              item.originalPrice > item.price && (
+                                <div className="text-xs text-gray-400 line-through">
+                                  ₹
+                                  {(
+                                    item.originalPrice * item.quantity
+                                  ).toLocaleString()}
+                                </div>
+                              )}
                           </div>
                         </div>
                       </div>
@@ -230,27 +199,33 @@ export default function Cart({ isOpen, onClose }) {
                           <Gift className="w-3 h-3 text-white" />
                         </div>
                       </div>
-                      
+
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-800 text-sm leading-tight mb-1">
                           Wooden Tumbler 500ml
                         </h3>
                         <p className="text-xs text-gray-500 mb-2">500 ml</p>
-                        
+
                         <div className="flex items-center justify-between">
                           <div className="flex items-center border border-gray-200 rounded-md">
                             <button className="p-1 hover:bg-gray-50 transition-colors">
                               <Minus className="w-3 h-3 text-gray-600" />
                             </button>
-                            <span className="px-3 py-1 text-sm font-medium min-w-[40px] text-center">1</span>
+                            <span className="px-3 py-1 text-sm font-medium min-w-[40px] text-center">
+                              1
+                            </span>
                             <button className="p-1 hover:bg-gray-50 transition-colors">
                               <Plus className="w-3 h-3 text-gray-600" />
                             </button>
                           </div>
-                          
+
                           <div className="text-right">
-                            <div className="font-bold text-lg text-red-800">FREE!</div>
-                            <div className="text-xs text-gray-400 line-through">₹1,218</div>
+                            <div className="font-bold text-lg text-red-800">
+                              FREE!
+                            </div>
+                            <div className="text-xs text-gray-400 line-through">
+                              ₹1,218
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -284,9 +259,13 @@ export default function Cart({ isOpen, onClose }) {
                     className="flex items-center justify-between w-full text-sm font-medium text-yellow-800"
                   >
                     <span>💰 FREE! Saved with discounts!</span>
-                    {showSavings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {showSavings ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
                   </button>
-                  
+
                   {showSavings && (
                     <div className="mt-2 text-xs text-yellow-700">
                       You saved ₹{calculateSavings()} with current offers!
@@ -303,8 +282,12 @@ export default function Cart({ isOpen, onClose }) {
                     <span className="font-medium">Estimated total</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">₹{totalPrice.toLocaleString()}</div>
-                    <div className="text-sm text-red-800">You saved ₹{calculateSavings().toLocaleString()}!</div>
+                    <div className="text-2xl font-bold">
+                      ₹{totalPrice.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-red-800">
+                      You saved ₹{calculateSavings().toLocaleString()}!
+                    </div>
                   </div>
                 </div>
 

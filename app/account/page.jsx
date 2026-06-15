@@ -55,9 +55,7 @@ function mergeSummary(apiData) {
         ? apiData.wishlistCount
         : STATIC_SUMMARY.wishlistCount,
     memberSince:
-      apiData.memberSince ||
-      apiData.created_at ||
-      STATIC_SUMMARY.memberSince,
+      apiData.memberSince || apiData.created_at || STATIC_SUMMARY.memberSince,
   };
 }
 
@@ -69,7 +67,9 @@ export default function AccountPage() {
     let cancelled = false;
     const fetchSummary = async () => {
       try {
-        const res = await api.get("/cart/account/summary");
+        const res = await api.get("/user-dashboard/cart/account/summary");
+
+        console.log("summery", res.data.data);
         const raw = res?.data?.data ?? res?.data;
         if (!cancelled) setSummary(mergeSummary(raw));
       } catch {
@@ -84,20 +84,17 @@ export default function AccountPage() {
 
   if (!user) return null;
 
-  const displayName =
-    user.name?.trim() || STATIC_USER_DISPLAY.name;
-  const displayEmail =
-    user.email?.trim() || STATIC_USER_DISPLAY.email;
-  const displayPhone =
-    user.phone?.trim() || STATIC_USER_DISPLAY.phone;
-
-  const initials = displayName
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "U";
+  const displayName = user?.name || STATIC_USER_DISPLAY.name;
+  const displayEmail = user?.email || STATIC_USER_DISPLAY.email;
+  const displayPhone = user?.phone || STATIC_USER_DISPLAY.phone;
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U";
 
   const memberLabel = summary.memberSince
     ? new Date(summary.memberSince).toLocaleDateString("en-IN", {

@@ -1,69 +1,27 @@
-// // import axios from "axios";
 
-// // const api = axios.create({
-// //   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-// //   headers: {
-// //     "Content-Type": "application/json",
-// //     Accept: "application/json",
-// //   },
-// //   timeout: 10000,
-// // });
-
-// // export default api;
-
-
-// import axios from "axios";
-
-// const api = axios.create({
-//   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-//   headers: {
-//     "Content-Type": "application/json",
-//     Accept: "application/json",
-//   },
-//   timeout: 10000,
-// });
-
-// /* ================= REQUEST INTERCEPTOR ================= */
-// api.interceptors.request.use(
-//   (config) => {
-//     // Get token from localStorage
-//     const token =
-//       typeof window !== "undefined"
-//         ? localStorage.getItem("jb-fashions-token")
-//         : null;
-
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-
-//     return config;
-//   },
-//   (error) => Promise.reject(error)
-// );
-
-// /* ================= RESPONSE INTERCEPTOR ================= */
-// api.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     // OPTIONAL: auto logout on 401
-//     if (
-//       error.response &&
-//       error.response.status === 401 &&
-//       typeof window !== "undefined"
-//     ) {
-//       localStorage.removeItem("jb-fashions-token");
-//       localStorage.removeItem("jb-fashions-user");
-//     }
-
-//     return Promise.reject(error);
-//   }
-// );
-
-// export default api;
 
 
 
 import axios from "axios";
+
+/* ================= API ENDPOINTS ================= */
+export const API_ENDPOINTS = {
+  HOME_SECTIONS: "/ecom/home-sections",
+  MENU: "/ecom/menu",
+  CATEGORIES_WITH_PRODUCTS: "/ecom/categories-with-products",
+  PRODUCTS_MAIN: "/ecom/products-main",
+  PRODUCTS: "/ecom/products",
+  PRODUCT_DETAILS: "/ecom/product",
+  SEARCH: "/ecom/search",
+  WISHLIST: "/ecom/wishlist",
+  CART: "/ecom/cart",
+  CHECKOUT: "/ecom/checkout",
+  ORDERS: "/ecom/orders",
+  USER_PROFILE: "/ecom/profile",
+  AUTH_LOGIN: "/ecom/auth/login",
+  AUTH_REGISTER: "/ecom/auth/register",
+  AUTH_LOGOUT: "/ecom/auth/logout",
+};
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,

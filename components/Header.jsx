@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Search, User, ShoppingCart, ChevronDown, Heart, Menu, X, Leaf } from "lucide-react";
+import {
+  Search,
+  User,
+  ShoppingCart,
+  ChevronDown,
+  Heart,
+  Menu,
+  X,
+  Leaf,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -14,6 +23,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 
 import Cart from "./Cart";
 import LoginModal from "./LoginModal";
+import { useHome } from "@/contexts/HomeContext";
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
@@ -22,6 +32,10 @@ if (typeof window !== "undefined") {
 
 export default function Header() {
   const router = useRouter();
+  const { menuCategories } = useHome();
+
+  const categories = menuCategories || [];
+
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
 
@@ -32,7 +46,8 @@ export default function Header() {
   const navRef = useRef(null);
   const topBarRef = useRef(null);
 
-  const [categories, setCategories] = useState([]);
+  // const [categories, setCategories] = useState([]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showCart, setShowCart] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -63,21 +78,27 @@ export default function Header() {
         gsap.fromTo(
           headerRef.current,
           { y: -100, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" }
+          { y: 0, opacity: 1, duration: 0.8, ease: "power2.out" },
         );
 
         // Logo animation with floating effect
         gsap.fromTo(
           logoRef.current,
           { scale: 0.8, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.6, delay: 0.2, ease: "back.out(1.7)" }
+          {
+            scale: 1,
+            opacity: 1,
+            duration: 0.6,
+            delay: 0.2,
+            ease: "back.out(1.7)",
+          },
         );
 
         // Search bar slide in
         gsap.fromTo(
           searchRef.current,
           { x: 50, opacity: 0 },
-          { x: 0, opacity: 1, duration: 0.6, delay: 0.4, ease: "power2.out" }
+          { x: 0, opacity: 1, duration: 0.6, delay: 0.4, ease: "power2.out" },
         );
 
         // Navigation stagger animation
@@ -85,7 +106,14 @@ export default function Header() {
           gsap.fromTo(
             navRef.current.children,
             { y: 20, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, delay: 0.6, ease: "power2.out" }
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.5,
+              stagger: 0.1,
+              delay: 0.6,
+              ease: "power2.out",
+            },
           );
         }
 
@@ -93,7 +121,7 @@ export default function Header() {
         gsap.fromTo(
           topBarRef.current,
           { height: 0, opacity: 0 },
-          { height: "auto", opacity: 1, duration: 0.5, ease: "power2.out" }
+          { height: "auto", opacity: 1, duration: 0.5, ease: "power2.out" },
         );
 
         // Scroll-triggered header transformation
@@ -126,23 +154,6 @@ export default function Header() {
   }, []);
 
   /* ================= FETCH CATEGORIES ================= */
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const res = await api.get("/ecom/menu");
-        const normalized = (res.data ?? []).map((c, index) => ({
-          id: index + 1,
-          name: c.label,
-          slug: c.key,
-        }));
-        setCategories(normalized);
-      } catch (err) {
-        console.error("Category load failed", err);
-      }
-    };
-
-    loadCategories();
-  }, []);
 
   /* ================= FETCH LOGO ================= */
   useEffect(() => {
@@ -187,27 +198,39 @@ export default function Header() {
   /* ================= UI ================= */
   return (
     <>
-      <header 
+      <header
         ref={headerRef}
         className={`sticky top-0 z-50 transition-all duration-300 ${
-          isScrolled 
-            ? 'bg-white/95 backdrop-blur-md shadow-nature-md' 
-            : 'bg-white shadow-nature'
+          isScrolled
+            ? "bg-white/95 backdrop-blur-md shadow-nature-md"
+            : "bg-white shadow-nature"
         }`}
       >
         {/* NATURE-INSPIRED TOP BAR */}
-        <div 
+        <div
           ref={topBarRef}
           className="bg-gradient-to-r from-sage-600 via-sage-500 to-earth-600 text-white py-3 text-center relative overflow-hidden"
         >
           {/* Floating leaf decorations */}
           <div className="absolute inset-0 opacity-20">
-            <Leaf className="absolute top-1 left-4 w-4 h-4 animate-float" style={{ animationDelay: '0s' }} />
-            <Leaf className="absolute top-2 right-8 w-3 h-3 animate-float" style={{ animationDelay: '1s' }} />
-            <Leaf className="absolute top-1 left-1/3 w-3 h-3 animate-float" style={{ animationDelay: '2s' }} />
-            <Leaf className="absolute top-2 right-1/4 w-4 h-4 animate-float" style={{ animationDelay: '0.5s' }} />
+            <Leaf
+              className="absolute top-1 left-4 w-4 h-4 animate-float"
+              style={{ animationDelay: "0s" }}
+            />
+            <Leaf
+              className="absolute top-2 right-8 w-3 h-3 animate-float"
+              style={{ animationDelay: "1s" }}
+            />
+            <Leaf
+              className="absolute top-1 left-1/3 w-3 h-3 animate-float"
+              style={{ animationDelay: "2s" }}
+            />
+            <Leaf
+              className="absolute top-2 right-1/4 w-4 h-4 animate-float"
+              style={{ animationDelay: "0.5s" }}
+            />
           </div>
-          
+
           <div className="relative z-10 px-4">
             <p className="text-sm sm:text-base font-medium font-serif">
               🌿 Welcome to Sridevi Herbal & Co – Purely Natural Care 🌿
@@ -236,10 +259,10 @@ export default function Header() {
               className="flex items-center gap-3 flex-shrink-0 group"
             >
               <div className="relative">
-                <img 
-                  src={logo} 
-                  alt="Logo" 
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-nature transition-nature group-hover:shadow-nature-md" 
+                <img
+                  src={logo}
+                  alt="Logo"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-nature transition-nature group-hover:shadow-nature-md"
                 />
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-sage-200/20 to-earth-200/20 opacity-0 group-hover:opacity-100 transition-nature"></div>
               </div>
@@ -247,7 +270,9 @@ export default function Header() {
                 <h1 className="text-xl lg:text-2xl font-bold font-serif text-gradient">
                   Sridevi Herbal & Co
                 </h1>
-                <p className="text-sm text-sage-600 font-medium">Pure Herbal Living</p>
+                <p className="text-sm text-sage-600 font-medium">
+                  Pure Herbal Living
+                </p>
               </div>
             </button>
 
@@ -305,8 +330,12 @@ export default function Header() {
                 {showProfileMenu && (
                   <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-md border border-sage-200 rounded-2xl shadow-nature-lg z-50 overflow-hidden">
                     <div className="px-4 py-3 bg-gradient-to-r from-sage-50 to-earth-50 border-b border-sage-200">
-                      <p className="text-xs text-sage-600 font-medium">Signed in as</p>
-                      <p className="font-semibold text-sm text-sage-800">{user?.phone}</p>
+                      <p className="text-xs text-sage-600 font-medium">
+                        Signed in as
+                      </p>
+                      <p className="font-semibold text-sm text-sage-800">
+                        {user?.phone}
+                      </p>
                     </div>
 
                     <button
@@ -331,8 +360,8 @@ export default function Header() {
               </div>
 
               {/* CART */}
-              <button 
-                onClick={() => setShowCart(true)} 
+              <button
+                onClick={() => setShowCart(true)}
                 className="relative p-2 text-sage-600 hover:text-sage-700 hover:bg-sage-50 rounded-full transition-nature group"
               >
                 <ShoppingCart className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
@@ -349,12 +378,12 @@ export default function Header() {
         {/* CATEGORY NAV - Desktop Only */}
         <nav className="hidden lg:block bg-gradient-to-r from-sage-50 via-cream-50 to-earth-50 border-t border-sage-200/50">
           <div className="container mx-auto px-6 py-3">
-            <div 
+            <div
               ref={navRef}
               className="flex items-center justify-between gap-6"
             >
               <div className="flex gap-8">
-                {categories.slice(0, 8).map((c) => (
+                {(categories || []).slice(0, 8).map((c) => (
                   <button
                     key={c.id}
                     onClick={() => handleCategoryClick(c.slug)}
@@ -365,10 +394,10 @@ export default function Header() {
                     }`}
                   >
                     {c.name}
-                    <span 
+                    <span
                       className={`absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-sage-500 to-earth-500 transition-all duration-300 ${
-                        activeCategory === c.slug 
-                          ? "w-full" 
+                        activeCategory === c.slug
+                          ? "w-full"
                           : "w-0 group-hover:w-full"
                       }`}
                     ></span>
@@ -379,21 +408,21 @@ export default function Header() {
                   onClick={() => setShowCategoryMenu(true)}
                   className="flex items-center gap-2 text-sm font-medium text-sage-600 hover:text-sage-700 transition-nature group"
                 >
-                  More 
+                  More
                   <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
                 </button>
               </div>
 
               <div className="flex gap-8 text-sm">
-                <button 
-                  onClick={() => router.push("/bath-powder-story")} 
+                <button
+                  onClick={() => router.push("/bath-powder-story")}
                   className="whitespace-nowrap font-medium text-sage-600 hover:text-sage-700 transition-nature relative group"
                 >
                   Bath Powder Story
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-sage-500 transition-all duration-300 group-hover:w-full"></span>
                 </button>
-                <button 
-                  onClick={() => router.push("/success-story")} 
+                <button
+                  onClick={() => router.push("/success-story")}
                   className="whitespace-nowrap font-medium text-sage-600 hover:text-sage-700 transition-nature relative group"
                 >
                   Success Story
@@ -408,7 +437,7 @@ export default function Header() {
       {/* NATURE-INSPIRED MOBILE SIDEBAR */}
       {showMobileSidebar && (
         <>
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 lg:hidden"
             onClick={() => setShowMobileSidebar(false)}
           />
@@ -418,18 +447,27 @@ export default function Header() {
               {/* Floating decorations */}
               <div className="absolute inset-0 opacity-20">
                 <Leaf className="absolute top-2 right-4 w-6 h-6 animate-float" />
-                <Leaf className="absolute bottom-3 left-6 w-4 h-4 animate-float" style={{ animationDelay: '1s' }} />
+                <Leaf
+                  className="absolute bottom-3 left-6 w-4 h-4 animate-float"
+                  style={{ animationDelay: "1s" }}
+                />
               </div>
-              
+
               <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <img src={logo} alt="Logo" className="w-10 h-10 rounded-full shadow-nature" />
+                  <img
+                    src={logo}
+                    alt="Logo"
+                    className="w-10 h-10 rounded-full shadow-nature"
+                  />
                   <div>
-                    <span className="font-serif font-semibold text-lg">Menu</span>
+                    <span className="font-serif font-semibold text-lg">
+                      Menu
+                    </span>
                     <p className="text-xs opacity-90">Natural Products</p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowMobileSidebar(false)}
                   className="p-2 hover:bg-white/20 rounded-full transition-nature"
                 >
@@ -442,8 +480,12 @@ export default function Header() {
             <div className="p-6 border-b border-sage-200/50 bg-gradient-to-r from-sage-50/50 to-cream-50/50">
               {isAuthenticated ? (
                 <div>
-                  <p className="text-xs text-sage-600 font-medium">Signed in as</p>
-                  <p className="font-semibold text-sage-800 mt-1">{user?.phone}</p>
+                  <p className="text-xs text-sage-600 font-medium">
+                    Signed in as
+                  </p>
+                  <p className="font-semibold text-sage-800 mt-1">
+                    {user?.phone}
+                  </p>
                   <button
                     onClick={() => handleNavigate("/account")}
                     className="mt-4 w-full bg-gradient-to-r from-sage-500 to-sage-600 text-white py-3 rounded-full text-sm font-medium shadow-nature hover:shadow-nature-md transition-nature"
@@ -519,7 +561,7 @@ export default function Header() {
               >
                 Success Story
               </button>
-              
+
               {isAuthenticated && (
                 <button
                   onClick={logout}
@@ -538,10 +580,14 @@ export default function Header() {
           <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 max-w-3xl w-full max-h-[80vh] overflow-y-auto shadow-nature-lg border border-sage-200">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="font-serif font-semibold text-2xl text-sage-800 mb-2">All Categories</h3>
-                <p className="text-sage-600 text-sm">Explore our natural product categories</p>
+                <h3 className="font-serif font-semibold text-2xl text-sage-800 mb-2">
+                  All Categories
+                </h3>
+                <p className="text-sage-600 text-sm">
+                  Explore our natural product categories
+                </p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowCategoryMenu(false)}
                 className="text-sage-500 hover:text-sage-700 p-2 hover:bg-sage-50 rounded-full transition-nature"
               >
