@@ -27,27 +27,31 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
-    Accept: "application/json",
+    // Accept: "application/json",
   },
-  timeout: 10000,
+  timeout: 50000,
 });
 
 /* ================= REQUEST INTERCEPTOR ================= */
-api.interceptors.request.use(
-  (config) => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("jb-fashions-token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("jb-fashions-token");
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
 
 /* ================= RESPONSE INTERCEPTOR ================= */
 api.interceptors.response.use(
+
+
+
+
+
+
+
   (response) => response,
   (error) => {
     // ❌ DO NOT clear localStorage blindly

@@ -12,6 +12,24 @@ export const HomeProvider = ({ children }) => {
   const [sections, setSections] = useState([]);
   const [categoriesWithProducts, setCategoriesWithProducts] = useState([]);
 
+  // Account summary state
+  const [summary, setSummary] = useState([]);
+
+  const fetchSummary = async () => {
+    try {
+      const res = await api.get("/user-dashboard/cart/account/summary");
+
+      const raw = res?.data?.data ?? res?.data;
+
+      console.log("summer from homeContext", raw);
+
+      setSummary(raw);
+    } catch (error) {
+      console.log(error);
+      // setSummary({ ...STATIC_SUMMARY });
+    }
+  };
+
   const fetchHomeData = async () => {
     try {
       setLoading(true);
@@ -54,10 +72,7 @@ export const HomeProvider = ({ children }) => {
         },
       ]);
 
-      // Category with products
       const categoriesRes = await api.get("/ecom/categories-with-products");
-
-      console.log("sssssss", categoriesRes);
 
       if (categoriesRes.data.success) {
         setCategoriesWithProducts(categoriesRes.data.data);
@@ -71,16 +86,19 @@ export const HomeProvider = ({ children }) => {
 
   useEffect(() => {
     fetchHomeData();
+    fetchSummary();
   }, []);
 
   return (
     <HomeContext.Provider
       value={{
         loading,
-        sections,
         menuCategories,
+        sections,
         categoriesWithProducts,
+        summary,
         fetchHomeData,
+        fetchSummary,
       }}
     >
       {children}

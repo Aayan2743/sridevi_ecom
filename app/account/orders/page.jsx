@@ -40,16 +40,6 @@ const item = {
 
 const ORDERS_PAGE_SIZE = 3;
 
-const TABS = [
-  { key: "all", label: "All" },
-  { key: "paid", label: "Paid" },
-  { key: "bill_sent", label: "Bill sent" },
-  { key: "ready", label: "Ready" },
-  { key: "in_transit", label: "In transit" },
-  { key: "completed", label: "Completed" },
-  { key: "others", label: "Others" },
-];
-
 function normalizeStatus(o) {
   return (o.status || o.order_status || "placed").toLowerCase();
 }
@@ -87,10 +77,7 @@ function statusStyle(status) {
     paid: "bg-lime-100 text-lime-950 ring-lime-200/80",
     placed: "bg-sage-100 text-sage-900 ring-sage-200/80",
   };
-  return (
-    map[status] ||
-    "bg-slate-100 text-slate-800 ring-slate-200/80"
-  );
+  return map[status] || "bg-slate-100 text-slate-800 ring-slate-200/80";
 }
 
 function statusIcon(status) {
@@ -105,7 +92,7 @@ export default function OrdersPage() {
   const router = useRouter();
   const listAnchorRef = useRef(null);
   const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState("all");
+
   const [usingDemo, setUsingDemo] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [orderPage, setOrderPage] = useState(1);
@@ -138,27 +125,12 @@ export default function OrdersPage() {
     };
   }, []);
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((o) => {
-      const st = normalizeStatus(o);
-      if (activeTab === "all") return true;
-      if (activeTab === "others") {
-        return !["paid", "bill_sent", "ready", "in_transit", "completed"].includes(
-          st,
-        );
-      }
-      return st === activeTab;
-    });
-  }, [orders, activeTab]);
+  const filteredOrders = orders;
 
   const ordersTotalPages = useMemo(
-    () => getTotalPages(filteredOrders.length, ORDERS_PAGE_SIZE),
-    [filteredOrders.length],
+    () => getTotalPages(orders.length, ORDERS_PAGE_SIZE),
+    [orders.length],
   );
-
-  useEffect(() => {
-    setOrderPage(1);
-  }, [activeTab]);
 
   useEffect(() => {
     setOrderPage((p) => clampPage(p, ordersTotalPages || 1));
@@ -185,19 +157,6 @@ export default function OrdersPage() {
     },
     [scrollToOrderList],
   );
-
-  const getCount = (key) => {
-    if (key === "all") return orders.length;
-    if (key === "others") {
-      return orders.filter(
-        (o) =>
-          !["paid", "bill_sent", "ready", "in_transit", "completed"].includes(
-            normalizeStatus(o),
-          ),
-      ).length;
-    }
-    return orders.filter((o) => normalizeStatus(o) === key).length;
-  };
 
   if (!loaded) {
     return (
@@ -226,8 +185,8 @@ export default function OrdersPage() {
               My orders
             </h1>
             <p className="mt-1 max-w-xl text-sm text-sage-700/90">
-              Track every shipment—from payment to delivery—with a clear timeline
-              for each purchase.
+              Track every shipment—from payment to delivery—with a clear
+              timeline for each purchase.
             </p>
           </div>
         </div>
@@ -238,37 +197,6 @@ export default function OrdersPage() {
         )}
       </motion.header>
 
-      <motion.div variants={item} className="relative">
-        <div className="flex gap-1 overflow-x-auto rounded-2xl border border-sage-200/60 bg-sage-50/50 p-1.5 shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
-                  active
-                    ? "bg-white text-sage-900 shadow-sm ring-1 ring-sage-200/80"
-                    : "text-sage-600 hover:bg-white/60 hover:text-sage-900"
-                }`}
-              >
-                {tab.label}
-                <span
-                  className={`min-w-[1.5rem] rounded-full px-2 py-0.5 text-center text-xs ${
-                    active
-                      ? "bg-sage-800 text-white"
-                      : "bg-sage-200/70 text-sage-800"
-                  }`}
-                >
-                  {getCount(tab.key)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </motion.div>
-
       <section
         ref={listAnchorRef}
         id="account-orders-list"
@@ -277,7 +205,7 @@ export default function OrdersPage() {
         <AccountPagination
           page={orderPage}
           pageSize={ORDERS_PAGE_SIZE}
-          totalItems={filteredOrders.length}
+          totalItems={orders.length}
           onPageChange={handleOrderPageChange}
           itemLabel="orders"
         />
@@ -289,104 +217,106 @@ export default function OrdersPage() {
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           className="space-y-4"
         >
-        <AnimatePresence mode="popLayout">
-          {pagedOrders.map((order, idx) => {
-            const st = normalizeStatus(order);
-            const Icon = statusIcon(st);
-            const total = order.total_amount ?? order.total ?? 0;
+          <AnimatePresence mode="popLayout">
+            {pagedOrders.map((order, idx) => {
+              const st = normalizeStatus(order);
+              const Icon = statusIcon(st);
+              const total = order.total_amount ?? order.total ?? 0;
 
-            return (
-              <motion.article
-                layout
-                key={order.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ delay: idx * 0.04 }}
-                whileHover={{ y: -2 }}
-                className="flex flex-col gap-0 rounded-2xl border border-sage-200/50 bg-white/95 p-4 shadow-sm transition-shadow hover:shadow-nature-md sm:p-5"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                  <div className="relative h-24 w-full shrink-0 overflow-hidden rounded-xl bg-sage-100 sm:h-24 sm:w-24">
-                    <Image
-                      src={orderImage(order)}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="96px"
+              return (
+                <motion.article
+                  layout
+                  key={order.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ delay: idx * 0.04 }}
+                  whileHover={{ y: -2 }}
+                  className="flex flex-col gap-0 rounded-2xl border border-sage-200/50 bg-white/95 p-4 shadow-sm transition-shadow hover:shadow-nature-md sm:p-5"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <div className="relative h-24 w-full shrink-0 overflow-hidden rounded-xl bg-sage-100 sm:h-24 sm:w-24">
+                      <Image
+                        src={orderImage(order)}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="96px"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-mono text-xs font-semibold uppercase tracking-wide text-sage-600">
+                          Order #{order.id}
+                        </p>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ring-1 ${statusStyle(st)}`}
+                        >
+                          <Icon className="h-3 w-3" aria-hidden />
+                          {st.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                      <p className="mt-1 font-semibold text-sage-950">
+                        {orderTitle(order)}
+                      </p>
+                      <p className="text-xs text-sage-600">
+                        {orderDate(order).toLocaleDateString("en-IN", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-row items-center justify-between gap-4 border-t border-sage-100 pt-4 sm:flex-col sm:border-0 sm:border-l sm:pl-5 sm:pt-0 sm:text-right">
+                      <div>
+                        <p className="text-xs font-medium uppercase text-sage-500">
+                          Total
+                        </p>
+                        <p className="text-lg font-bold text-sage-900">
+                          ₹{Number(total).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(
+                            `/account/orders/details/?id=${encodeURIComponent(order.id)}`,
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-xl bg-sage-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sage-900"
+                      >
+                        View
+                        <ChevronRight className="h-4 w-4" aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    className="mt-4 border-t border-sage-100/90 pt-4"
+                    role="group"
+                    aria-label="Order items and delivery tracking"
+                  >
+                    <OrderLineItemsPreview items={order.items} />
+                    <OrderTrackingBar
+                      status={st}
+                      className={order.items?.length ? "mt-4" : undefined}
                     />
                   </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-mono text-xs font-semibold uppercase tracking-wide text-sage-600">
-                        Order #{order.id}
-                      </p>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ring-1 ${statusStyle(st)}`}
-                      >
-                        <Icon className="h-3 w-3" aria-hidden />
-                        {st.replace(/_/g, " ")}
-                      </span>
-                    </div>
-                    <p className="mt-1 font-semibold text-sage-950">
-                      {orderTitle(order)}
-                    </p>
-                    <p className="text-xs text-sage-600">
-                      {orderDate(order).toLocaleDateString("en-IN", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 flex-row items-center justify-between gap-4 border-t border-sage-100 pt-4 sm:flex-col sm:border-0 sm:border-l sm:pl-5 sm:pt-0 sm:text-right">
-                    <div>
-                      <p className="text-xs font-medium uppercase text-sage-500">
-                        Total
-                      </p>
-                      <p className="text-lg font-bold text-sage-900">
-                        ₹{Number(total).toLocaleString("en-IN")}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        router.push(
-                          `/account/orders/details/?id=${encodeURIComponent(order.id)}`,
-                        )
-                      }
-                      className="inline-flex items-center gap-1 rounded-xl bg-sage-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sage-900"
-                    >
-                      View
-                      <ChevronRight className="h-4 w-4" aria-hidden />
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  className="mt-4 border-t border-sage-100/90 pt-4"
-                  role="group"
-                  aria-label="Order items and delivery tracking"
-                >
-                  <OrderLineItemsPreview items={order.items} />
-                  <OrderTrackingBar
-                    status={st}
-                    className={order.items?.length ? "mt-4" : undefined}
-                  />
-                </div>
-              </motion.article>
-            );
-          })}
-        </AnimatePresence>
+                </motion.article>
+              );
+            })}
+          </AnimatePresence>
         </motion.div>
 
         {filteredOrders.length === 0 && (
           <div className="rounded-2xl border border-dashed border-sage-200 bg-sage-50/50 px-6 py-12 text-center">
             <Package className="mx-auto h-10 w-10 text-sage-400" />
-            <p className="mt-3 font-medium text-sage-800">No orders in this tab</p>
+            <p className="mt-3 font-medium text-sage-800">
+              No orders in this tab
+            </p>
             <p className="mt-1 text-sm text-sage-600">
               Try another filter or continue shopping to build your history.
             </p>
@@ -398,13 +328,12 @@ export default function OrdersPage() {
             className="mt-2"
             page={orderPage}
             pageSize={ORDERS_PAGE_SIZE}
-            totalItems={filteredOrders.length}
+            totalItems={orders.length}
             onPageChange={handleOrderPageChange}
             itemLabel="orders"
           />
         )}
       </section>
-
     </motion.div>
   );
 }

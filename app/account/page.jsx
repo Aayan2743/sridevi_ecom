@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHome } from "@/contexts/HomeContext";
 import api from "@/lib/api";
 import {
   Package,
@@ -61,26 +62,9 @@ function mergeSummary(apiData) {
 
 export default function AccountPage() {
   const { user } = useAuth();
-  const [summary, setSummary] = useState(STATIC_SUMMARY);
+  const { summary } = useHome();
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchSummary = async () => {
-      try {
-        const res = await api.get("/user-dashboard/cart/account/summary");
-
-        console.log("summery", res.data.data);
-        const raw = res?.data?.data ?? res?.data;
-        if (!cancelled) setSummary(mergeSummary(raw));
-      } catch {
-        if (!cancelled) setSummary({ ...STATIC_SUMMARY });
-      }
-    };
-    fetchSummary();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  console.log("Summer", summary);
 
   if (!user) return null;
 

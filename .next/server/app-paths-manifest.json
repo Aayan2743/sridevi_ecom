@@ -1,9 +1,7 @@
 {
   "/page": "app/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/product/details/page": "app/product/details/page.js",
-  "/account/page": "app/account/page.js",
-  "/account/orders/details/page": "app/account/orders/details/page.js",
   "/account/wishlist/page": "app/account/wishlist/page.js",
-  "/account/affiliate/page": "app/account/affiliate/page.js"
+  "/account/affiliate/page": "app/account/affiliate/page.js",
+  "/account/affiliate-dashboard/page": "app/account/affiliate-dashboard/page.js",
+  "/account/page": "app/account/page.js"
 }

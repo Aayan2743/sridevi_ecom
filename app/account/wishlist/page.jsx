@@ -7,14 +7,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import { STATIC_WISHLIST } from "@/lib/accountStaticData";
-import {
-  Heart,
-  Sparkles,
-  Trash2,
-  ExternalLink,
-  ShoppingBag,
-} from "lucide-react";
+
+import { Heart, Trash2, ExternalLink, ShoppingBag } from "lucide-react";
 
 const container = {
   hidden: { opacity: 0 },
@@ -37,7 +31,7 @@ export default function WishlistPage() {
   const router = useRouter();
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [usingDemo, setUsingDemo] = useState(false);
+  // const [usingDemo, setUsingDemo] = useState(false);
 
   const handleRemove = useCallback(async (productId) => {
     try {
@@ -46,7 +40,7 @@ export default function WishlistPage() {
         { product_id: productId },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("jb-fashions-token")}`,
           },
         },
       );
@@ -54,15 +48,11 @@ export default function WishlistPage() {
         setWishlist((prev) => prev.filter((w) => w.id !== productId));
         toast.success("Removed from wishlist");
       }
-    } catch {
-      if (usingDemo) {
-        setWishlist((prev) => prev.filter((w) => w.id !== productId));
-        toast.success("Removed (demo list)");
-      } else {
-        toast.error("Failed to remove item");
-      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to remove item");
     }
-  }, [usingDemo]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,23 +60,20 @@ export default function WishlistPage() {
       try {
         const res = await api.get("user-dashboard/get-wishlist", {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("jb-fashions-token")}`,
           },
         });
+
+        console.log("wishlist", res);
         const raw = res?.data?.data ?? res?.data ?? [];
         const list = Array.isArray(raw) ? raw : [];
         if (cancelled) return;
-        if (list.length > 0) {
-          setWishlist(list);
-          setUsingDemo(false);
-        } else {
-          setWishlist(STATIC_WISHLIST);
-          setUsingDemo(true);
-        }
-      } catch {
+        setWishlist(list);
+      } catch (error) {
+        console.log(error);
+
         if (!cancelled) {
-          setWishlist(STATIC_WISHLIST);
-          setUsingDemo(true);
+          setWishlist([]);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -140,13 +127,6 @@ export default function WishlistPage() {
             Continue shopping
           </Link>
         </div>
-        {usingDemo && (
-          <div className="inline-flex items-center gap-2 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-2 text-xs font-medium text-amber-950">
-            <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            Showing sample wishlist items until your saved list loads from the
-            server.
-          </div>
-        )}
       </motion.header>
 
       {wishlist.length === 0 ? (
@@ -156,7 +136,7 @@ export default function WishlistPage() {
         >
           <Heart className="mx-auto h-12 w-12 text-sage-300" />
           <p className="mt-4 font-serif text-xl font-semibold text-sage-900">
-            Your wishlist is empty
+            No products in wishlist.
           </p>
           <p className="mt-2 text-sm text-sage-600">
             Explore the catalog and tap the heart on products you want to save.

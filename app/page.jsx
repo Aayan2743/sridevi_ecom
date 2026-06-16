@@ -73,10 +73,7 @@ const TRUST_POINTS = [
 
 export default function Home() {
   const router = useRouter();
-  // const [loading, setLoading] = useState(true);
-  // const [sections, setSections] = useState([]);
-  // const [menuCategories, setMenuCategories] = useState([]);
-  // const [categoriesWithProducts, setCategoriesWithProducts] = useState([]);
+
 
   const { loading, sections, menuCategories, categoriesWithProducts } =
     useHome();
