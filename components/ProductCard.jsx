@@ -15,7 +15,7 @@ export default function ProductCard({ product, variant = "default" }) {
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
-  const { isAuthenticated, openLogin } = useAuth();
+  const { user, isAuthenticated, openLogin } = useAuth();
 
   // Refs for animations
   const cardRef = useRef(null);
@@ -60,7 +60,9 @@ export default function ProductCard({ product, variant = "default" }) {
   const originalPrice =
     toNumber(inStockVariant?.extra_price) ??
     toNumber(firstVariant?.extra_price) ??
-    (price > 0 && rawDiscount > 0 ? Math.round(price / (1 - rawDiscount / 100)) : null) ??
+    (price > 0 && rawDiscount > 0
+      ? Math.round(price / (1 - rawDiscount / 100))
+      : null) ??
     null;
 
   const computedDiscount =
@@ -76,7 +78,9 @@ export default function ProductCard({ product, variant = "default" }) {
         : null;
 
   const category =
-    product.category?.name || product.category_name || product.category_main?.name;
+    product.category?.name ||
+    product.category_name ||
+    product.category_main?.name;
 
   const videoUrl = product.videos?.[0]?.video_url;
 
@@ -85,7 +89,7 @@ export default function ProductCard({ product, variant = "default" }) {
     safeAnimate(() => {
       // Initial card animation
       animations.fadeUp(cardRef.current, 0);
-      
+
       // Floating animation for the card
       animations.float(cardRef.current);
     });
@@ -239,8 +243,7 @@ export default function ProductCard({ product, variant = "default" }) {
     <>
       <div
         ref={cardRef}
-        className="relative bg-gradient-to-br from-white via-sage-50/30 to-cream-50/30 rounded-3xl border border-sage-200/50 overflow-hidden group cursor-pointer shadow-nature hover:shadow-nature-lg transition-all duration-500 backdrop-blur-sm"
-        onClick={handleOpenProduct}
+        className="relative bg-gradient-to-br from-white via-sage-50/30 to-cream-50/30 rounded-3xl border border-sage-200/50 overflow-hidden group shadow-nature hover:shadow-nature-lg transition-all duration-500 backdrop-blur-sm"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -252,12 +255,11 @@ export default function ProductCard({ product, variant = "default" }) {
 
         {/* Discount Badge */}
         {discountPercent && (
-          <div 
+          <div
             ref={badgeRef}
             className="absolute top-3 left-3 z-10 bg-gradient-to-r from-red-900 to-red-800 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1"
           >
-            <Sparkles className="w-3 h-3" />
-            -{discountPercent}%
+            <Sparkles className="w-3 h-3" />-{discountPercent}%
           </div>
         )}
 
@@ -286,7 +288,9 @@ export default function ProductCard({ product, variant = "default" }) {
           />
 
           {/* Natural overlay on hover */}
-          <div className={`absolute inset-0 bg-gradient-to-t from-sage-900/20 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
+          <div
+            className={`absolute inset-0 bg-gradient-to-t from-sage-900/20 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0"}`}
+          ></div>
 
           {/* Video Play Button */}
           {videoUrl && (
@@ -346,18 +350,92 @@ export default function ProductCard({ product, variant = "default" }) {
             )}
           </div>
 
-          {/* Add to Cart Button */}
-          <button
-            onClick={handleAddToCart}
-            className="w-full bg-red-900 hover:bg-red-800 text-white font-medium py-3 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg group/cart"
-          >
-            <ShoppingCart className="w-4 h-4 group-hover/cart:scale-110 transition-transform duration-300" />
-            <span className="text-sm">Add to Cart</span>
-          </button>
+          {user?.is_affiliate && product.affinity_enabled && (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-green-600">
+                    Earn {product.affinity_percent}% Commission
+                  </p>
+
+                  <p className="font-bold text-green-700">
+                    ₹{product.affiliate_earning}
+                  </p>
+                </div>
+
+                {/* <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.nativeEvent?.stopImmediatePropagation?.();
+
+                    const link = `${window.location.origin}/product/details?slug=${product.slug}&ref=${user.id}`;
+
+                    const textarea = document.createElement("textarea");
+                    textarea.value = link;
+                    textarea.style.position = "fixed";
+                    textarea.style.opacity = "0";
+                    document.body.appendChild(textarea);
+                    textarea.select();
+
+                    try {
+                      document.execCommand("copy");
+                    } catch {
+                      // execCommand failed silently
+                    }
+
+                    document.body.removeChild(textarea);
+
+                    toast.success("Affiliate link copied");
+                  }}
+                  className="rounded-lg bg-green-600 px-3 py-2 text-xs text-white"
+                >
+                  Copy Link
+                </button> */}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log("COPY BUTTON CLICKED");
+                    alert("COPY BUTTON CLICKED");
+                  }}
+                  className="rounded-lg bg-green-600 px-3 py-2 text-xs text-white"
+                >
+                  Copy Link sdfdf
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (product.slug) {
+                  router.push(`/product/details?slug=${product.slug}`);
+                }
+              }}
+              className="flex-1 bg-sage-700 hover:bg-sage-800 text-white font-medium py-3 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+            >
+              <span className="text-sm">View</span>
+            </button>
+
+            <button
+              onClick={handleAddToCart}
+              className="flex-1 bg-red-900 hover:bg-red-800 text-white font-medium py-3 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg group/cart"
+            >
+              <ShoppingCart className="w-4 h-4 group-hover/cart:scale-110 transition-transform duration-300" />
+              <span className="text-sm">Add to Cart</span>
+            </button>
+          </div>
         </div>
 
         {/* Hover glow effect */}
-        <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br from-sage-400/10 via-transparent to-earth-400/10 transition-opacity duration-300 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
+        <div
+          className={`absolute inset-0 rounded-3xl bg-gradient-to-br from-sage-400/10 via-transparent to-earth-400/10 transition-opacity duration-300 pointer-events-none ${isHovered ? "opacity-100" : "opacity-0"}`}
+        ></div>
       </div>
 
       <VideoPopup

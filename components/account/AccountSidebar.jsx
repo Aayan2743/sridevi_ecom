@@ -22,6 +22,11 @@ const menu = [
   { label: "My Wishlist", path: "/account/wishlist", icon: Heart },
   { label: "Become Affiliate", path: "/account/affiliate", icon: Share2 },
   {
+    label: "Affiliate Products",
+    path: "/account/affiliate/products",
+    icon: Package,
+  },
+  {
     label: "Affiliate dashboard",
     path: "/account/affiliate-dashboard",
     icon: LayoutDashboard,

@@ -27,6 +27,7 @@ import ProductCard from "@/components/ProductCard";
 import api, { API_ENDPOINTS } from "@/lib/api";
 import { animations, safeAnimate } from "@/lib/gsap-utils";
 import { useHome } from "@/contexts/HomeContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
@@ -74,6 +75,9 @@ const TRUST_POINTS = [
 export default function Home() {
   const router = useRouter();
 
+    const { user } = useAuth();
+
+    console.log("user", user);
 
   const { loading, sections, menuCategories, categoriesWithProducts } =
     useHome();
