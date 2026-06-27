@@ -49,21 +49,9 @@ export default function ProductCard({ product, variant = "default" }) {
     toNumber(product.discount) ??
     null;
 
-  const price =
-    toNumber(inStockVariant?.amount) ??
-    toNumber(product.min_variant_price) ??
-    toNumber(product.final_price) ??
-    toNumber(inStockVariant?.extra_price) ??
-    toNumber(product.price) ??
-    0;
+  const price = toNumber(product.final_price) ?? 0;
 
-  const originalPrice =
-    toNumber(inStockVariant?.extra_price) ??
-    toNumber(firstVariant?.extra_price) ??
-    (price > 0 && rawDiscount > 0
-      ? Math.round(price / (1 - rawDiscount / 100))
-      : null) ??
-    null;
+  const originalPrice = toNumber(product.price) ?? null;
 
   const computedDiscount =
     originalPrice && originalPrice > price
@@ -151,6 +139,12 @@ export default function ProductCard({ product, variant = "default" }) {
     });
   };
 
+  const handleOpenProduct = () => {
+    if (product.slug) {
+      router.push(`/product/details?slug=${product.slug}`);
+    }
+  };
+
   const handleAddToCart = (e) => {
     e.stopPropagation();
 
@@ -176,17 +170,6 @@ export default function ProductCard({ product, variant = "default" }) {
 
     const variantStock = Number(selectedVariant.quantity || 0);
 
-    // Add to cart animation
-    safeAnimate(() => {
-      gsap.to(e.target, {
-        scale: 0.95,
-        duration: 0.1,
-        yoyo: true,
-        repeat: 1,
-        ease: "power2.inOut",
-      });
-    });
-
     addToCart({
       id: product.id,
       variationId: selectedVariant.id,
@@ -201,11 +184,6 @@ export default function ProductCard({ product, variant = "default" }) {
       description: `${product.name} has been added to your cart.`,
     });
   };
-  const handleOpenProduct = () => {
-    if (product.slug) {
-      router.push(`/product/details?slug=${product.slug}`);
-    }
-  };
 
   const handleWishlist = (e) => {
     e.stopPropagation();
@@ -215,17 +193,6 @@ export default function ProductCard({ product, variant = "default" }) {
       return;
     }
 
-    // Wishlist animation
-    safeAnimate(() => {
-      gsap.to(e.target, {
-        scale: 1.2,
-        duration: 0.2,
-        yoyo: true,
-        repeat: 1,
-        ease: "power2.inOut",
-      });
-    });
-
     toggleWishlist(product);
     toast.success(inWishlist ? "Removed from wishlist" : "Added to wishlist");
   };
@@ -233,6 +200,20 @@ export default function ProductCard({ product, variant = "default" }) {
   const handleVideoClick = (e) => {
     e.stopPropagation();
     setShowVideo(true);
+  };
+
+  const handleCopyAffiliateLink = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      const link = `${window.location.origin}/product/details?slug=${product.slug}&ref=${user.affiliate_code}`;
+      await navigator.clipboard.writeText(link);
+      toast.success("Affiliate link copied");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to copy link");
+    }
   };
 
   if (!product.name || !primaryImage) {
@@ -248,7 +229,7 @@ export default function ProductCard({ product, variant = "default" }) {
         onMouseLeave={handleMouseLeave}
       >
         {/* Organic background decoration */}
-        <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0 opacity-5 pointer-events-none">
           <div className="absolute top-4 right-6 w-16 h-16 bg-sage-300 rounded-full organic-shape"></div>
           <div className="absolute bottom-8 left-4 w-12 h-12 bg-earth-300 rounded-full organic-shape-alt"></div>
         </div>
@@ -289,7 +270,7 @@ export default function ProductCard({ product, variant = "default" }) {
 
           {/* Natural overlay on hover */}
           <div
-            className={`absolute inset-0 bg-gradient-to-t from-sage-900/20 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 bg-gradient-to-t from-sage-900/20 via-transparent to-transparent transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-0"} pointer-events-none`}
           ></div>
 
           {/* Video Play Button */}
@@ -327,14 +308,28 @@ export default function ProductCard({ product, variant = "default" }) {
 
           {/* Rating (if showcase variant) */}
           {isShowcase && (
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, idx) => (
-                <Star
-                  key={idx}
-                  className={`w-3.5 h-3.5 ${idx < 4 ? "fill-earth-400 text-earth-400" : "text-sage-200"}`}
-                />
-              ))}
-              <span className="text-xs text-sage-600 ml-1">(148)</span>
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={14}
+                    className={
+                      star <= Math.round(product.rating || 0)
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-gray-300"
+                    }
+                  />
+                ))}
+              </div>
+
+              <span className="text-xs font-medium text-gray-600">
+                {product.rating || 0}
+              </span>
+
+              <span className="text-xs text-gray-500">
+                ({product.reviews_count || 0} reviews)
+              </span>
             </div>
           )}
 
@@ -343,13 +338,9 @@ export default function ProductCard({ product, variant = "default" }) {
             <span className="text-lg font-bold text-sage-800 font-serif">
               ₹{price.toLocaleString("en-IN")}
             </span>
-            {originalPrice && originalPrice > price && (
-              <span className="text-sm text-sage-500 line-through">
-                ₹{originalPrice.toLocaleString("en-IN")}
-              </span>
-            )}
           </div>
 
+          {/* Affiliate Section */}
           {user?.is_affiliate && product.affinity_enabled && (
             <div className="rounded-xl border border-green-200 bg-green-50 p-2">
               <div className="flex items-center justify-between">
@@ -357,52 +348,16 @@ export default function ProductCard({ product, variant = "default" }) {
                   <p className="text-xs text-green-600">
                     Earn {product.affinity_percent}% Commission
                   </p>
-
                   <p className="font-bold text-green-700">
                     ₹{product.affiliate_earning}
                   </p>
                 </div>
-
-                {/* <button
+                <button
                   type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.nativeEvent?.stopImmediatePropagation?.();
-
-                    const link = `${window.location.origin}/product/details?slug=${product.slug}&ref=${user.id}`;
-
-                    const textarea = document.createElement("textarea");
-                    textarea.value = link;
-                    textarea.style.position = "fixed";
-                    textarea.style.opacity = "0";
-                    document.body.appendChild(textarea);
-                    textarea.select();
-
-                    try {
-                      document.execCommand("copy");
-                    } catch {
-                      // execCommand failed silently
-                    }
-
-                    document.body.removeChild(textarea);
-
-                    toast.success("Affiliate link copied");
-                  }}
+                  onClick={handleCopyAffiliateLink}
                   className="rounded-lg bg-green-600 px-3 py-2 text-xs text-white"
                 >
                   Copy Link
-                </button> */}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    console.log("COPY BUTTON CLICKED");
-                    alert("COPY BUTTON CLICKED");
-                  }}
-                  className="rounded-lg bg-green-600 px-3 py-2 text-xs text-white"
-                >
-                  Copy Link sdfdf
                 </button>
               </div>
             </div>
@@ -411,24 +366,23 @@ export default function ProductCard({ product, variant = "default" }) {
           {/* Action Buttons */}
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                if (product.slug) {
-                  router.push(`/product/details?slug=${product.slug}`);
-                }
+                handleOpenProduct();
               }}
-              className="flex-1 bg-sage-700 hover:bg-sage-800 text-white font-medium py-3 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+              className="flex-1 bg-sage-700 text-white py-3 rounded-2xl"
             >
-              <span className="text-sm">View</span>
+              View
             </button>
 
-            <button
+            {/* <button
               onClick={handleAddToCart}
-              className="flex-1 bg-red-900 hover:bg-red-800 text-white font-medium py-3 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg group/cart"
+              className="flex-1 bg-red-900 hover:bg-red-800 text-white font-medium py-3 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg group/cart cursor-pointer"
             >
               <ShoppingCart className="w-4 h-4 group-hover/cart:scale-110 transition-transform duration-300" />
               <span className="text-sm">Add to Cart</span>
-            </button>
+            </button> */}
           </div>
         </div>
 

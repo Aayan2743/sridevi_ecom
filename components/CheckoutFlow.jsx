@@ -6,10 +6,14 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const CheckoutFlow = ({ isOpen, onClose }) => {
   const { cart, getTotalPrice, clearCart } = useCart();
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const ref = searchParams.get("ref");
 
   const [currentStep, setCurrentStep] = useState(1);
   const [addresses, setAddresses] = useState([]);
@@ -63,7 +67,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
         const addrRes = await api.get("/user-dashboard/cart/get-address");
         const addressList = addrRes.data?.data || [];
         setAddresses(addressList);
-        
+
         if (addressList.length > 0) {
           setSelectedAddress(addressList[0].id);
         }
@@ -73,7 +77,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
         if (pgRes.data?.success) {
           const gatewayData = pgRes.data.data || {};
           setPaymentGateways(gatewayData);
-          
+
           // Store Razorpay key for later use
           if (gatewayData.razorpay_key) {
             setRazorpayKey(gatewayData.razorpay_key);
@@ -117,7 +121,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
   /* ================= SAVE ADDRESS ================= */
   const handleSaveAddress = async () => {
     const { name, phone, address, pincode } = addressForm;
-    
+
     if (!name || !phone || !address || !pincode) {
       toast.error("Please fill all required fields");
       return;
@@ -129,15 +133,18 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
     }
 
     try {
-      const res = await api.post("/user-dashboard/cart/add-address", addressForm);
+      const res = await api.post(
+        "/user-dashboard/cart/add-address",
+        addressForm,
+      );
       const newAddress = res.data.data;
 
       setAddresses((prev) => [newAddress, ...prev]);
       setSelectedAddress(newAddress.id);
       setShowAddressForm(false);
-      
+
       toast.success("Address added successfully");
-      
+
       // Reset form
       setAddressForm({
         name: "",
@@ -158,6 +165,10 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
   const buildOrderPayload = (paymentData) => ({
     user_id: user?.id,
     address_id: selectedAddress,
+    // affiliate_id: localStorage.getItem("affiliate_id"),
+    // affiliate_code: localStorage.getItem("affiliate_code"),
+
+    affiliate_code: ref || null,
     payment: paymentData,
     price_details: {
       subtotal: getTotalPrice(),
@@ -214,7 +225,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
       console.log("📦 Razorpay Order Created:", {
         order_id: order.id,
         amount: order.amount,
-        currency: "INR"
+        currency: "INR",
       });
 
       // 3️⃣ Configure Razorpay Options
@@ -231,14 +242,19 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
 
           try {
             // 4️⃣ Verify Payment
-            const verifyRes = await api.post("/user-dashboard/cart/verify-payment", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
+            const verifyRes = await api.post(
+              "/user-dashboard/cart/verify-payment",
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+            );
 
             if (!verifyRes.data?.success) {
-              toast.error("Payment verification failed. Please contact support.");
+              toast.error(
+                "Payment verification failed. Please contact support.",
+              );
               setProcessingPayment(false);
               return;
             }
@@ -253,13 +269,18 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 amount: currentTotal,
-              })
+              }),
             );
 
             if (!saveRes.data?.success) {
               toast.error("Order saving failed. Please contact support.");
               setProcessingPayment(false);
+              // router.push("/account/orders");
               return;
+
+              // setTimeout(() => {
+              //   router.push("/account/orders");
+              // }, 1500);
             }
 
             console.log("🧾 Order saved:", saveRes.data);
@@ -269,9 +290,13 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
             toast.success("Payment Successful! 🎉");
             onClose();
             setProcessingPayment(false);
+            router.push("/account/orders");
           } catch (err) {
             console.error("❌ Payment processing error:", err);
-            toast.error(err.response?.data?.message || "Payment processing failed. Please contact support.");
+            toast.error(
+              err.response?.data?.message ||
+                "Payment processing failed. Please contact support.",
+            );
             setProcessingPayment(false);
           }
         },
@@ -299,14 +324,19 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
 
       rzp.on("payment.failed", function (response) {
         console.error("❌ Payment Failed:", response.error);
-        toast.error(response.error.description || "Payment failed. Please try again.");
+        toast.error(
+          response.error.description || "Payment failed. Please try again.",
+        );
         setProcessingPayment(false);
       });
 
       rzp.open();
     } catch (err) {
       console.error("❌ Razorpay Error:", err);
-      toast.error(err.response?.data?.message || "Something went wrong. Please try again.");
+      toast.error(
+        err.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      );
       setProcessingPayment(false);
     }
   };
@@ -321,11 +351,12 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
       setFinalAmount(currentTotal);
 
       // 1️⃣ Create PhonePe Order
-      const { data } = await api.post("/user-dashboard/create-phone-order", 
+      const { data } = await api.post(
+        "/user-dashboard/create-phone-order",
         buildOrderPayload({
           method: "phonepe",
           amount: currentTotal,
-        })
+        }),
       );
 
       if (!data?.success) {
@@ -341,10 +372,12 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
       toast.success("Order Confirmed! 🎉");
       onClose();
       setProcessingPayment(false);
-      
     } catch (err) {
       console.error("❌ PhonePe Error:", err);
-      toast.error(err.response?.data?.message || "Something went wrong. Please try again.");
+      toast.error(
+        err.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      );
       setProcessingPayment(false);
     }
   };
@@ -390,7 +423,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
           buildOrderPayload({
             method: "cod",
             amount: finalAmount,
-          })
+          }),
         );
 
         if (!saveRes.data?.success) {
@@ -410,7 +443,7 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
           buildOrderPayload({
             method: selectedPaymentMethod,
             amount: finalAmount,
-          })
+          }),
         );
 
         if (!saveRes.data?.success) {
@@ -426,7 +459,10 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
       }
     } catch (err) {
       console.error("❌ Order Error:", err);
-      toast.error(err.response?.data?.message || "Order placement failed. Please try again.");
+      toast.error(
+        err.response?.data?.message ||
+          "Order placement failed. Please try again.",
+      );
       setProcessingPayment(false);
     }
   };
@@ -463,9 +499,11 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
     const lowerMethod = method.toLowerCase();
     if (lowerMethod.includes("razorpay")) return "💳";
     if (lowerMethod.includes("cashfree")) return "💳";
-    if (lowerMethod.includes("phonepe") || lowerMethod.includes("phone")) return "📱";
+    if (lowerMethod.includes("phonepe") || lowerMethod.includes("phone"))
+      return "📱";
     if (lowerMethod.includes("payu")) return "💰";
-    if (lowerMethod.includes("cod") || lowerMethod.includes("cash")) return "💵";
+    if (lowerMethod.includes("cod") || lowerMethod.includes("cash"))
+      return "💵";
     if (lowerMethod.includes("upi")) return "📱";
     if (lowerMethod.includes("card")) return "💳";
     if (lowerMethod.includes("wallet")) return "👛";
@@ -475,29 +513,42 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-[60]">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      
+
       <div className="absolute right-0 top-0 h-full w-full sm:max-w-md md:max-w-2xl bg-white flex flex-col">
         {/* HEADER */}
         <div className="flex justify-between items-center p-4 sm:p-5 bg-red-900 text-white">
           <h2 className="text-base sm:text-lg font-semibold">Checkout</h2>
-          <button onClick={onClose} className="hover:bg-red-800 p-1.5 sm:p-2 rounded">
+          <button
+            onClick={onClose}
+            className="hover:bg-red-800 p-1.5 sm:p-2 rounded"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* STEP INDICATOR */}
         <div className="flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-4 bg-gray-50 border-b">
-          <div className={`flex items-center gap-1.5 sm:gap-2 ${currentStep >= 1 ? "text-red-900" : "text-gray-400"}`}>
-            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${currentStep >= 1 ? "bg-red-900 text-white" : "bg-gray-300"}`}>
+          <div
+            className={`flex items-center gap-1.5 sm:gap-2 ${currentStep >= 1 ? "text-red-900" : "text-gray-400"}`}
+          >
+            <div
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${currentStep >= 1 ? "bg-red-900 text-white" : "bg-gray-300"}`}
+            >
               1
             </div>
             <span className="text-xs sm:text-sm font-medium">Address</span>
           </div>
-          
-          <div className={`h-px w-8 sm:w-12 ${currentStep >= 2 ? "bg-red-900" : "bg-gray-300"}`} />
-          
-          <div className={`flex items-center gap-1.5 sm:gap-2 ${currentStep >= 2 ? "text-red-900" : "text-gray-400"}`}>
-            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${currentStep >= 2 ? "bg-red-900 text-white" : "bg-gray-300"}`}>
+
+          <div
+            className={`h-px w-8 sm:w-12 ${currentStep >= 2 ? "bg-red-900" : "bg-gray-300"}`}
+          />
+
+          <div
+            className={`flex items-center gap-1.5 sm:gap-2 ${currentStep >= 2 ? "text-red-900" : "text-gray-400"}`}
+          >
+            <div
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm ${currentStep >= 2 ? "bg-red-900 text-white" : "bg-gray-300"}`}
+            >
               2
             </div>
             <span className="text-sm font-medium">Payment</span>
@@ -511,7 +562,9 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
             <>
               <div className="flex items-center gap-2 mb-4">
                 <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-red-900" />
-                <h3 className="text-base sm:text-lg font-semibold">Select Delivery Address</h3>
+                <h3 className="text-base sm:text-lg font-semibold">
+                  Select Delivery Address
+                </h3>
               </div>
 
               <button
@@ -524,44 +577,55 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
               {loadingAddresses && (
                 <div className="text-center py-10">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-900"></div>
-                  <p className="mt-2 text-sm text-gray-600">Loading addresses...</p>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Loading addresses...
+                  </p>
                 </div>
               )}
 
               {!loadingAddresses && addresses.length === 0 && (
                 <div className="text-center text-gray-500 py-10">
                   <MapPin className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 text-gray-300" />
-                  <p className="font-medium text-sm sm:text-base">No address found</p>
-                  <p className="text-xs sm:text-sm mt-1">Please add a delivery address to continue</p>
+                  <p className="font-medium text-sm sm:text-base">
+                    No address found
+                  </p>
+                  <p className="text-xs sm:text-sm mt-1">
+                    Please add a delivery address to continue
+                  </p>
                 </div>
               )}
 
-              {!loadingAddresses && addresses.map((a) => (
-                <div
-                  key={a.id}
-                  onClick={() => setSelectedAddress(a.id)}
-                  className={`border-2 p-3 sm:p-4 rounded-lg mb-3 cursor-pointer transition ${
-                    selectedAddress === a.id
-                      ? "border-red-900 bg-red-50"
-                      : "border-gray-200 hover:border-red-300"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm sm:text-base text-gray-900">{a.name}</p>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">{a.phone}</p>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-2">
-                        {a.address}, {a.city}, {a.state} - {a.pincode}
-                      </p>
-                    </div>
-                    {selectedAddress === a.id && (
-                      <div className="w-5 h-5 rounded-full bg-red-900 flex items-center justify-center flex-shrink-0 ml-2">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
+              {!loadingAddresses &&
+                addresses.map((a) => (
+                  <div
+                    key={a.id}
+                    onClick={() => setSelectedAddress(a.id)}
+                    className={`border-2 p-3 sm:p-4 rounded-lg mb-3 cursor-pointer transition ${
+                      selectedAddress === a.id
+                        ? "border-red-900 bg-red-50"
+                        : "border-gray-200 hover:border-red-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm sm:text-base text-gray-900">
+                          {a.name}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                          {a.phone}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-2">
+                          {a.address}, {a.city}, {a.state} - {a.pincode}
+                        </p>
                       </div>
-                    )}
+                      {selectedAddress === a.id && (
+                        <div className="w-5 h-5 rounded-full bg-red-900 flex items-center justify-center flex-shrink-0 ml-2">
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </>
           )}
 
@@ -570,7 +634,9 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
             <>
               <div className="flex items-center gap-2 mb-4">
                 <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-red-900" />
-                <h3 className="text-base sm:text-lg font-semibold">Select Payment Method</h3>
+                <h3 className="text-base sm:text-lg font-semibold">
+                  Select Payment Method
+                </h3>
               </div>
 
               {enabledGateways.length === 0 ? (
@@ -592,8 +658,12 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-2xl sm:text-3xl mb-2">{getPaymentIcon(method)}</div>
-                            <p className="font-semibold text-sm sm:text-base text-gray-900">{formatPaymentMethodName(method)}</p>
+                            <div className="text-2xl sm:text-3xl mb-2">
+                              {getPaymentIcon(method)}
+                            </div>
+                            <p className="font-semibold text-sm sm:text-base text-gray-900">
+                              {formatPaymentMethodName(method)}
+                            </p>
                           </div>
                           {selectedPaymentMethod === method && (
                             <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-900 flex items-center justify-center flex-shrink-0">
@@ -616,25 +686,33 @@ const CheckoutFlow = ({ isOpen, onClose }) => {
 
                 <div className="space-y-3">
                   {cart.slice(0, 3).map((item) => (
-                    <div key={`${item.id}-${item.variationId}`} className="flex gap-3">
+                    <div
+                      key={`${item.id}-${item.variationId}`}
+                      className="flex gap-3"
+                    >
                       <img
                         src={item.image}
                         alt={item.name}
                         className="w-16 h-16 rounded object-cover"
                       />
                       <div className="flex-1">
-                        <p className="text-sm font-medium line-clamp-1">{item.name}</p>
-                        <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                        <p className="text-sm font-medium line-clamp-1">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Qty: {item.quantity}
+                        </p>
                         <p className="text-sm font-semibold text-red-900">
                           ₹{item.price * item.quantity}
                         </p>
                       </div>
                     </div>
                   ))}
-                  
+
                   {cart.length > 3 && (
                     <p className="text-sm text-gray-600">
-                      +{cart.length - 3} more item{cart.length - 3 > 1 ? "s" : ""}
+                      +{cart.length - 3} more item
+                      {cart.length - 3 > 1 ? "s" : ""}
                     </p>
                   )}
                 </div>

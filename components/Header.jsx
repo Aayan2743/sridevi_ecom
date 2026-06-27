@@ -156,20 +156,20 @@ export default function Header() {
   /* ================= FETCH CATEGORIES ================= */
 
   /* ================= FETCH LOGO ================= */
-  useEffect(() => {
-    const loadLogo = async () => {
-      try {
-        const res = await api.get("/ecom/app-logo-settings");
-        if (res.data?.success && res.data?.data?.app_logo) {
-          setLogo(res.data.data.app_logo_url);
-        }
-      } catch (err) {
-        console.error("Logo load failed", err.response?.data || err.message);
-      }
-    };
+  // useEffect(() => {
+  //   const loadLogo = async () => {
+  //     try {
+  //       const res = await api.get("/ecom/app-logo-settings");
+  //       if (res.data?.success && res.data?.data?.app_logo) {
+  //         setLogo(res.data.data.app_logo_url);
+  //       }
+  //     } catch (err) {
+  //       console.error("Logo load failed", err.response?.data || err.message);
+  //     }
+  //   };
 
-    loadLogo();
-  }, []);
+  //   loadLogo();
+  // }, []);
 
   /* ================= HANDLERS ================= */
   const handleCategoryClick = (slug) => {

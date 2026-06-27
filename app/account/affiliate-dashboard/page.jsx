@@ -2,28 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
 import {
   LayoutDashboard,
   TrendingUp,
   Package,
   IndianRupee,
   Truck,
-  Sparkles,
-  Info,
-  X,
-  Link2,
-  ShieldCheck,
-  Clock,
   ChevronRight,
-  Gift,
+  Wallet,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import AccountPagination from "@/components/account/AccountPagination";
-import { clampPage, getTotalPages, paginateSlice } from "@/lib/paginationUtils";
-import {
-  STATIC_AFFILIATE_CONVERSIONS,
-  AFFILIATE_REDEEM_THRESHOLD,
-} from "@/lib/affiliateDashboardStaticData";
+import { clampPage, getTotalPages } from "@/lib/paginationUtils";
+import api from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 const container = {
   hidden: { opacity: 0 },
@@ -42,104 +37,111 @@ const item = {
   },
 };
 
-const PAGE_SIZE = 5;
-
-function formatDate(iso) {
-  try {
-    return new Intl.DateTimeFormat("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(iso));
-  } catch {
-    return "—";
-  }
-}
+const PAGE_SIZE = 10;
 
 function deliveryLabel(key) {
   const map = {
+    pending: "Pending",
     placed: "Placed",
     paid: "Paid",
     bill_sent: "Bill sent",
     ready: "Ready to ship",
-    in_transit: "In transit",
+    in_transit: "In Transit",
     completed: "Delivered",
+    delivered: "Delivered",
+    cancelled: "Cancelled",
   };
-  return map[key] || key.replace(/_/g, " ");
+
+  return map[key] || key || "—";
 }
 
 function deliveryBadgeClass(key) {
   const map = {
+    pending: "bg-yellow-100 text-yellow-900 ring-yellow-200/80",
+    paid: "bg-lime-100 text-lime-950 ring-lime-200/80",
     completed: "bg-emerald-100 text-emerald-900 ring-emerald-200/80",
+    delivered: "bg-emerald-100 text-emerald-900 ring-emerald-200/80",
+    cancelled: "bg-red-100 text-red-900 ring-red-200/80",
     in_transit: "bg-sky-100 text-sky-900 ring-sky-200/80",
     ready: "bg-violet-100 text-violet-900 ring-violet-200/80",
     bill_sent: "bg-amber-100 text-amber-950 ring-amber-200/80",
-    paid: "bg-lime-100 text-lime-950 ring-lime-200/80",
-    placed: "bg-sage-100 text-sage-900 ring-sage-200/80",
   };
   return map[key] || "bg-slate-100 text-slate-800 ring-slate-200/80";
 }
 
-function commissionStatusMeta(status) {
-  if (status === "confirmed")
-    return {
-      label: "Confirmed",
-      className: "bg-emerald-50 text-emerald-900 ring-emerald-200/70",
-    };
-  if (status === "held")
-    return {
-      label: "On hold",
-      className: "bg-amber-50 text-amber-950 ring-amber-200/70",
-    };
-  return {
-    label: "Pending",
-    className: "bg-slate-50 text-slate-800 ring-slate-200/70",
-  };
-}
-
 export default function AffiliateDashboardPage() {
-  const [page, setPage] = useState(1);
-  const [snackbarVisible, setSnackbarVisible] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const rows = STATIC_AFFILIATE_CONVERSIONS;
-  const totalPages = getTotalPages(rows.length, PAGE_SIZE);
+  const [showAffiliateButton, setShowAffiliateButton] = useState(false);
+
+  const router = useRouter();
+  const [stats, setStats] = useState({
+    total_orders: 0,
+    units_sold: 0,
+    total_commission: 0,
+    credited_to_wallet: 0,
+  });
+  const [purchases, setPurchases] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState(null);
+
+  const fetchDashboard = useCallback(
+    async (pageNum = 1) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await api.get("/user-dashboard/affiliate/dashboard", {
+          params: {
+            page: pageNum,
+            per_page: PAGE_SIZE,
+          },
+        });
+
+        if (res.data?.success) {
+          setStats(
+            res.data.stats || {
+              total_orders: 0,
+              units_sold: 0,
+              total_commission: 0,
+              credited_to_wallet: 0,
+            },
+          );
+
+          setPurchases(res.data.purchases || []);
+          setPagination(res.data.pagination || null);
+        }
+      } catch (err) {
+        if (err.response?.status === 404) {
+          toast.error(
+            err.response?.data?.message || "Affiliate account not found",
+          );
+
+          setShowAffiliateButton(true);
+          return;
+        }
+
+        setError("Failed to load dashboard data");
+        toast.error("Failed to load affiliate dashboard");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    fetchDashboard(page);
+  }, [page, fetchDashboard]);
+
+  const totalPages = pagination
+    ? Number(pagination.last_page)
+    : getTotalPages(purchases.length, PAGE_SIZE);
 
   useEffect(() => {
     setPage((p) => clampPage(p, totalPages || 1));
   }, [totalPages]);
-
-  const pagedRows = useMemo(
-    () => paginateSlice(rows, page, PAGE_SIZE),
-    [rows, page],
-  );
-
-  const totals = useMemo(() => {
-    const units = rows.reduce((s, r) => s + r.quantity, 0);
-    const commissionAll = rows.reduce((s, r) => s + r.commissionAmount, 0);
-    const confirmed = rows
-      .filter((r) => r.commissionStatus === "confirmed")
-      .reduce((s, r) => s + r.commissionAmount, 0);
-    const pending = rows
-      .filter((r) => r.commissionStatus === "pending")
-      .reduce((s, r) => s + r.commissionAmount, 0);
-    return {
-      orders: rows.length,
-      units,
-      commissionAll,
-      confirmed,
-      pending,
-    };
-  }, [rows]);
-
-  const redeemProgress = Math.min(
-    100,
-    (totals.confirmed / AFFILIATE_REDEEM_THRESHOLD) * 100,
-  );
-  const canRedeem = totals.confirmed >= AFFILIATE_REDEEM_THRESHOLD;
-  const amountToGo = Math.max(
-    0,
-    AFFILIATE_REDEEM_THRESHOLD - totals.confirmed,
-  );
 
   const handlePageChange = useCallback((p) => {
     setPage(p);
@@ -151,6 +153,65 @@ export default function AffiliateDashboardPage() {
     });
   }, []);
 
+  const handleRetry = () => {
+    fetchDashboard(page);
+  };
+
+  /* Show loading state */
+  if (loading && purchases.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-3">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-sage-600" />
+          <p className="text-sm text-sage-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* Show error state */
+  if (error && purchases.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+            <RefreshCw className="h-8 w-8" />
+          </div>
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="inline-flex items-center gap-2 rounded-xl bg-sage-800 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sage-900"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+  if (showAffiliateButton) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="max-w-md rounded-2xl border border-yellow-300 bg-yellow-50 p-8 text-center shadow">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Affiliate Account Not Found
+          </h2>
+
+          <p className="mt-3 text-gray-600">
+            Please register as an affiliate to access your dashboard.
+          </p>
+
+          <button
+            onClick={() => router.push("/account/affiliate")}
+            className="mt-6 rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+          >
+            Go to Affiliate Page
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <motion.div
       variants={container}
@@ -158,65 +219,67 @@ export default function AffiliateDashboardPage() {
       animate="show"
       className="space-y-8 pb-24 md:pb-8"
     >
-      <motion.header variants={item} className="space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-sage-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sage-800 ring-1 ring-sage-200/80">
-              <LayoutDashboard className="h-3.5 w-3.5" aria-hidden />
-              Performance
-            </div>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-sage-950 sm:text-4xl">
-              Affiliate dashboard
-            </h1>
-            <p className="max-w-2xl text-sm leading-relaxed text-sage-700/95 sm:text-base">
-              Track every referred sale, fulfilment stage, and your commission
-              per line. Figures below are sample data until your referral API is
-              connected.
-            </p>
+      {/* Header */}
+      <motion.header
+        variants={item}
+        className="flex flex-wrap items-start justify-between gap-4"
+      >
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-sage-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sage-800 ring-1 ring-sage-200/80">
+            <LayoutDashboard className="h-3.5 w-3.5" aria-hidden />
+            Purchases
           </div>
-          <Link
-            href="/account/affiliate"
-            className="group inline-flex items-center gap-2 rounded-2xl border border-sage-200/90 bg-white px-4 py-2.5 text-sm font-semibold text-sage-900 shadow-sm ring-1 ring-sage-100/80 transition hover:border-sage-300 hover:bg-sage-50/80"
-          >
-            <Link2 className="h-4 w-4 text-sage-600" aria-hidden />
-            Share links
-            <ChevronRight className="h-4 w-4 text-sage-400 transition group-hover:translate-x-0.5" />
-          </Link>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-sage-950 sm:text-4xl">
+            My Referred Purchases
+          </h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-sage-700/95 sm:text-base">
+            Products purchased through your referral links. When a product is
+            delivered, the commission is automatically added to your wallet.
+          </p>
         </div>
+        <Link
+          href="/account/affiliate-dashboard/wallet"
+          className="group inline-flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-400"
+        >
+          <Wallet className="h-4 w-4" aria-hidden />
+          Go to Wallet
+          <ChevronRight className="h-4 w-4 text-emerald-400 transition group-hover:translate-x-0.5" />
+        </Link>
       </motion.header>
 
+      {/* Summary Cards */}
       <motion.section
         variants={item}
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         {[
           {
-            label: "Referred line items",
-            value: totals.orders,
-            sub: "Distinct conversions",
+            label: "Total Orders",
+            value: stats.total_orders,
+            sub: "Referred purchases",
             icon: Package,
             accent: "from-sage-600 to-sage-800",
           },
           {
-            label: "Units purchased",
-            value: totals.units,
+            label: "Units Sold",
+            value: stats.units_sold,
             sub: "Via your links",
             icon: TrendingUp,
             accent: "from-emerald-600 to-teal-800",
           },
           {
-            label: "Confirmed commission",
-            value: `₹${totals.confirmed.toLocaleString("en-IN")}`,
-            sub: "Eligible toward payout",
+            label: "Total Commission",
+            value: `₹${Number(stats.total_commission).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+            sub: "All referred orders",
             icon: IndianRupee,
             accent: "from-earth-700 to-sage-900",
           },
           {
-            label: "All commissions (incl. pending)",
-            value: `₹${totals.commissionAll.toLocaleString("en-IN")}`,
-            sub: `Pending review: ₹${totals.pending.toLocaleString("en-IN")}`,
-            icon: Sparkles,
-            accent: "from-violet-600 to-indigo-800",
+            label: "Credited to Wallet",
+            value: `₹${Number(stats.credited_to_wallet).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+            sub: "From delivered orders",
+            icon: Wallet,
+            accent: "from-emerald-700 to-green-900",
           },
         ].map((card) => (
           <div
@@ -246,95 +309,23 @@ export default function AffiliateDashboardPage() {
         ))}
       </motion.section>
 
-      <motion.section
+      {/* Info Banner */}
+      <motion.div
         variants={item}
-        className="rounded-2xl border border-sage-200/70 bg-gradient-to-br from-sage-50/90 via-white to-cream-50/80 p-5 shadow-inner ring-1 ring-white/80 sm:p-6"
+        className="rounded-2xl border border-emerald-200/70 bg-emerald-50/70 px-5 py-4 text-sm text-emerald-800"
       >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sage-800 text-white shadow-md">
-              <Gift className="h-5 w-5" aria-hidden />
-            </span>
-            <div>
-              <p className="font-semibold text-sage-950">Redemption threshold</p>
-              <p className="mt-0.5 max-w-xl text-sm text-sage-700">
-                Only{" "}
-                <span className="font-semibold text-sage-900">
-                  confirmed commission
-                </span>{" "}
-                counts toward the minimum payout. Pending lines clear after
-                delivery and the return window.
-              </p>
-            </div>
-          </div>
-          <div className="w-full min-w-[200px] flex-1 sm:max-w-xs sm:flex-none">
-            <div className="flex items-baseline justify-between text-xs font-semibold text-sage-800">
-              <span>Progress to ₹{AFFILIATE_REDEEM_THRESHOLD}</span>
-              <span>{Math.round(redeemProgress)}%</span>
-            </div>
-            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-sage-200/80">
-              <motion.div
-                className={`h-full rounded-full ${
-                  canRedeem
-                    ? "bg-gradient-to-r from-emerald-500 to-teal-600"
-                    : "bg-gradient-to-r from-sage-500 to-sage-700"
-                }`}
-                initial={{ width: 0 }}
-                animate={{ width: `${redeemProgress}%` }}
-                transition={{ type: "spring", stiffness: 90, damping: 22 }}
-              />
-            </div>
-            <p className="mt-2 text-xs text-sage-600">
-              {canRedeem
-                ? "Threshold met — payout requests open when your program goes live."
-                : `₹${amountToGo.toLocaleString("en-IN")} confirmed commission to go.`}
-            </p>
-          </div>
-        </div>
-      </motion.section>
+        <p>
+          💡 <strong>How it works:</strong> When an order status becomes{" "}
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-200/80">
+            <Truck className="h-3 w-3" /> Delivered
+          </span>
+          , the commission amount is automatically credited to your wallet. You
+          can then withdraw it once your wallet balance reaches the minimum
+          threshold.
+        </p>
+      </motion.div>
 
-      <motion.section
-        variants={item}
-        className="grid gap-4 md:grid-cols-3"
-        aria-labelledby="affiliate-pro-tips"
-      >
-        <h2 id="affiliate-pro-tips" className="sr-only">
-          How your affiliate program works
-        </h2>
-        {[
-          {
-            title: "Attribution",
-            body: "Your friend should open your shared URL first. We recommend a 30-day last-click cookie once the backend is wired—industry standard for fair credit.",
-            icon: Link2,
-          },
-          {
-            title: "Commission lifecycle",
-            body: "Pending → confirmed after delivery plus return window. Held may apply if the order is invoiced, refunded, or disputed.",
-            icon: Clock,
-          },
-          {
-            title: "Compliance",
-            body: "Self-referrals, stacked coupons, and misleading claims can void earnings. Payouts may be taxable; keep invoices as per local rules.",
-            icon: ShieldCheck,
-          },
-        ].map((tip) => (
-          <div
-            key={tip.title}
-            className="flex gap-3 rounded-2xl border border-sage-100/90 bg-white/80 p-4 shadow-sm ring-1 ring-sage-50/80"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sage-100 text-sage-800">
-              <tip.icon className="h-4 w-4" aria-hidden />
-            </span>
-            <div>
-              <p className="font-semibold text-sage-900">{tip.title}</p>
-              <p className="mt-1 text-xs leading-relaxed text-sage-600 sm:text-sm">
-                {tip.body}
-              </p>
-            </div>
-          </div>
-        ))}
-      </motion.section>
-
+      {/* Purchases Table */}
       <motion.section variants={item} className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -342,152 +333,106 @@ export default function AffiliateDashboardPage() {
               id="affiliate-dash-table"
               className="font-serif text-xl font-semibold text-sage-950 sm:text-2xl"
             >
-              Referred purchases
+              Purchases
             </h2>
             <p className="mt-1 text-sm text-sage-600">
-              Buyer name, per-product quantity, delivery status, and your earnings
-              for each referred line.
+              Each order placed through your referral link with its current
+              delivery status.
             </p>
           </div>
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-sage-100/90 px-3 py-1 text-xs font-medium text-sage-800 ring-1 ring-sage-200/60">
-            <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            Demo data — connect API for live sync
-          </p>
+          {loading && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sage-100/90 px-3 py-1 text-xs font-medium text-sage-600">
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+              Refreshing...
+            </span>
+          )}
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-sage-200/60 bg-white/95 shadow-nature-md ring-1 ring-sage-50/80">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-sage-100 bg-sage-50/80 text-xs font-bold uppercase tracking-wider text-sage-700">
-                  <th className="px-4 py-3.5">Order</th>
-                  <th className="px-4 py-3.5">Date</th>
-                  <th className="px-4 py-3.5">Purchased by</th>
-                  <th className="px-4 py-3.5">Product</th>
-                  <th className="px-4 py-3.5 text-center">Qty</th>
-                  <th className="px-4 py-3.5">Delivery</th>
-                  <th className="px-4 py-3.5 text-right">Rate</th>
-                  <th className="px-4 py-3.5 text-right">You earn</th>
-                  <th className="px-4 py-3.5">Payout status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-sage-100/90">
-                {pagedRows.map((r) => {
-                  const cs = commissionStatusMeta(r.commissionStatus);
-                  return (
+        {purchases.length === 0 ? (
+          <div className="rounded-2xl border border-sage-200/60 bg-white/95 p-10 text-center shadow-nature-md">
+            <Package className="mx-auto h-10 w-10 text-sage-300" />
+            <p className="mt-3 text-sm font-medium text-sage-600">
+              No purchases yet
+            </p>
+            <p className="mt-1 text-xs text-sage-500">
+              Share your referral link to start earning commissions.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-sage-200/60 bg-white/95 shadow-nature-md ring-1 ring-sage-50/80">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-sage-100 bg-sage-50/80 text-xs font-bold uppercase tracking-wider text-sage-700">
+                    <th className="px-4 py-3.5">Order #</th>
+                    <th className="px-4 py-3.5">Date</th>
+                    <th className="px-4 py-3.5">Customer</th>
+                    <th className="px-4 py-3.5">Product</th>
+                    <th className="px-4 py-3.5 text-center">Qty</th>
+                    <th className="px-4 py-3.5 text-right">Rate</th>
+                    <th className="px-4 py-3.5 text-right">Commission</th>
+                    <th className="px-4 py-3.5">Delivery Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-sage-100/90">
+                  {purchases.map((r) => (
                     <tr
                       key={r.id}
                       className="bg-white/50 transition hover:bg-sage-50/40"
                     >
                       <td className="whitespace-nowrap px-4 py-3.5 font-mono text-xs font-semibold text-sage-900">
-                        {r.orderRef}
+                        #{r.order_no}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-sage-700">
-                        {formatDate(r.date)}
+                        {r.date || "—"}
                       </td>
-                      <td className="max-w-[160px] px-4 py-3.5 font-medium text-sage-900">
+                      <td className="max-w-[140px] px-4 py-3.5 font-medium text-sage-900">
                         <span className="line-clamp-2">
-                          {r.purchaserName?.trim() || "—"}
+                          {r.customer || "—"}
                         </span>
                       </td>
                       <td className="max-w-[220px] px-4 py-3.5 font-medium text-sage-900">
-                        <span className="line-clamp-2">{r.productName}</span>
+                        <span className="line-clamp-2">{r.product || "-"}</span>
                       </td>
                       <td className="px-4 py-3.5 text-center tabular-nums text-sage-800">
-                        {r.quantity}
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${deliveryBadgeClass(r.deliveryStatus)}`}
-                        >
-                          <Truck className="h-3 w-3 opacity-80" aria-hidden />
-                          {deliveryLabel(r.deliveryStatus)}
-                        </span>
+                        {r.qty}
                       </td>
                       <td className="px-4 py-3.5 text-right tabular-nums text-sage-700">
-                        {r.commissionRate}%
+                        {r.rate}
                       </td>
-                      <td className="px-4 py-3.5 text-right font-semibold tabular-nums text-sage-950">
-                        ₹{r.commissionAmount.toLocaleString("en-IN")}
+                      <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold tabular-nums text-sage-950">
+                        ₹
+                        {Number(r.commission || 0).toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                        })}
                       </td>
                       <td className="px-4 py-3.5">
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${cs.className}`}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${deliveryBadgeClass(r.delivery_status)}`}
                         >
-                          {cs.label}
+                          <Truck className="h-3 w-3 opacity-80" aria-hidden />
+                          {deliveryLabel(r.delivery_status)}
                         </span>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {totalPages > 1 && (
-            <div className="border-t border-sage-100 bg-sage-50/40 px-4 py-4">
-              <AccountPagination
-                page={page}
-                totalItems={rows.length}
-                pageSize={PAGE_SIZE}
-                onPageChange={handlePageChange}
-                itemLabel="conversions"
-              />
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
-      </motion.section>
-
-      <AnimatePresence>
-        {snackbarVisible && (
-          <motion.div
-            role="status"
-            initial={{ opacity: 0, y: 48, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 32, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 380, damping: 28 }}
-            className="fixed bottom-4 left-4 right-4 z-[60] md:bottom-8 md:left-auto md:right-8 md:max-w-md"
-          >
-            <div className="relative overflow-hidden rounded-2xl border border-earth-200/80 bg-gradient-to-br from-earth-50 via-white to-amber-50/90 p-4 shadow-[0_16px_48px_-12px_rgba(67,20,7,0.35)] ring-1 ring-earth-100/90">
-              <div
-                className="pointer-events-none absolute -left-1/2 top-0 h-full w-1/2 skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-80 animate-pulse-soft"
-                aria-hidden
-              />
-              <div className="relative flex gap-3">
-                <motion.span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-earth-700 to-sage-900 text-white shadow-md"
-                  animate={{ scale: [1, 1.06, 1] }}
-                  transition={{
-                    duration: 2.4,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <IndianRupee className="h-5 w-5" aria-hidden />
-                </motion.span>
-                <div className="min-w-0 flex-1 pt-0.5">
-                  <p className="text-sm font-bold text-earth-950">
-                    Redeem from ₹{AFFILIATE_REDEEM_THRESHOLD} confirmed
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-earth-900/85">
-                    You can request a payout only after your{" "}
-                    <span className="font-semibold">confirmed commission</span>{" "}
-                    balance reaches ₹{AFFILIATE_REDEEM_THRESHOLD}. Track progress
-                    in the bar above.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSnackbarVisible(false)}
-                  className="shrink-0 rounded-xl p-1.5 text-earth-700 transition hover:bg-earth-100/80 hover:text-earth-950"
-                  aria-label="Dismiss notice"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+            {totalPages > 1 && (
+              <div className="border-t border-sage-100 bg-sage-50/40 px-4 py-4">
+                <AccountPagination
+                  page={page}
+                  totalItems={pagination?.total || purchases.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={handlePageChange}
+                  itemLabel="purchases"
+                />
               </div>
-            </div>
-          </motion.div>
+            )}
+          </div>
         )}
-      </AnimatePresence>
+      </motion.section>
     </motion.div>
   );
 }

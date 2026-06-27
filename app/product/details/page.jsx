@@ -86,34 +86,12 @@ const KEY_BENEFITS_CARDS = [
 ];
 
 /** Static review snippets for PDP gallery (UI only until reviews API is wired). */
-const CUSTOMER_REVIEWS_UI = [
-  {
-    id: 1,
-    name: "Ananya K.",
-    rating: 5,
-    text: "Genuine quality—texture and aroma feel authentic. Already placed a second order.",
-    date: "2 weeks ago",
-  },
-  {
-    id: 2,
-    name: "Rahul M.",
-    rating: 5,
-    text: "Packaging was neat and delivery was quick. Happy with the results so far.",
-    date: "1 month ago",
-  },
-  {
-    id: 3,
-    name: "Deepa S.",
-    rating: 4,
-    text: "Great for our daily routine. Would love a bigger family pack option.",
-    date: "1 month ago",
-  },
-];
 
 function ProductDetailContent({ product, onBack }) {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
+  const CUSTOMER_REVIEWS_UI = product.customer_reviews || [];
   const containerRef = useRef(null);
   const imageRef = useRef(null);
   const detailsRef = useRef(null);
@@ -218,76 +196,7 @@ function ProductDetailContent({ product, onBack }) {
     toast.success(inWishlist ? "Removed from wishlist" : "Added to wishlist");
   };
 
-  const similarProducts = [
-    {
-      id: 999,
-      name: "Premium Herbal Tea",
-      slug: "premium-herbal-tea",
-      min_variant_price: "350",
-      max_variant_price: "400",
-      category: { name: "Herbal Teas" },
-      images: [
-        {
-          image_url:
-            "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=400&fit=crop",
-        },
-      ],
-      variant_combinations: [
-        { extra_price: "400", discount: "10", quantity: 10, amount: "350" },
-      ],
-    },
-    {
-      id: 998,
-      name: "Organic Turmeric Powder",
-      slug: "organic-turmeric-powder",
-      min_variant_price: "420",
-      max_variant_price: "450",
-      category: { name: "Spices" },
-      images: [
-        {
-          image_url:
-            "https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&h=400&fit=crop",
-        },
-      ],
-      variant_combinations: [
-        { extra_price: "450", discount: "5", quantity: 15, amount: "420" },
-      ],
-    },
-    {
-      id: 997,
-      name: "Ayurvedic Hair Oil",
-      slug: "ayurvedic-hair-oil",
-      min_variant_price: "380",
-      max_variant_price: "420",
-      category: { name: "Hair Care" },
-      images: [
-        {
-          image_url:
-            "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop",
-        },
-      ],
-      variant_combinations: [
-        { extra_price: "420", discount: "8", quantity: 20, amount: "380" },
-      ],
-    },
-    {
-      id: 996,
-      name: "Natural Face Pack",
-      slug: "natural-face-pack",
-      min_variant_price: "500",
-      max_variant_price: "550",
-      category: { name: "Skin Care" },
-      images: [
-        {
-          image_url:
-            "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop",
-        },
-      ],
-      variant_combinations: [
-        { extra_price: "550", discount: "12", quantity: 8, amount: "500" },
-      ],
-    },
-  ];
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   const categoryLabel =
     product.category?.name || product.category_name || "Herbal Care";
@@ -301,6 +210,21 @@ function ProductDetailContent({ product, onBack }) {
     product.tagline ||
     (categoryLabel ? `${categoryLabel} program` : "Wellness program");
 
+  useEffect(() => {
+    if (!product?.slug) return;
+
+    const fetchRelatedProducts = async () => {
+      try {
+        const res = await api.get(`/ecom/products/${product.slug}/related`);
+
+        setRelatedProducts(res.data.data || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchRelatedProducts();
+  }, [product?.slug]);
   return (
     <div
       ref={containerRef}
@@ -465,10 +389,12 @@ function ProductDetailContent({ product, onBack }) {
               <div className="border-t border-[#e0dbd3]/90 bg-white px-2 py-2 sm:px-3 sm:py-2.5">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-[#1b4332] sm:text-[11px]">
-                    Customer reviews
+                    Customer Reviews
                   </p>
+
                   <span className="shrink-0 text-[10px] font-semibold text-[#6b1c23] sm:text-[11px]">
-                    4.8 · 247 ratings
+                    {product.average_rating || 0} · {product.ratings_count || 0}{" "}
+                    ratings
                   </span>
                 </div>
                 <ul className="mt-1.5 space-y-1.5 sm:mt-2 sm:space-y-2">
@@ -481,10 +407,12 @@ function ProductDetailContent({ product, onBack }) {
                         <span className="text-xs font-semibold text-[#1b4332] sm:text-sm">
                           {r.name}
                         </span>
+
                         <span className="text-[10px] text-[#6b6560]">
                           {r.date}
                         </span>
                       </div>
+
                       <div className="mt-0.5 flex gap-0.5">
                         {Array.from({ length: 5 }, (_, i) => (
                           <Star
@@ -494,12 +422,12 @@ function ProductDetailContent({ product, onBack }) {
                                 ? "fill-amber-400 text-amber-400"
                                 : "fill-transparent text-[#d4cfc4]"
                             }`}
-                            aria-hidden
                           />
                         ))}
                       </div>
+
                       <p className="mt-1 text-[11px] leading-snug text-[#3d3830] sm:text-xs">
-                        {r.text}
+                        {r.review}
                       </p>
                     </li>
                   ))}
@@ -588,20 +516,24 @@ function ProductDetailContent({ product, onBack }) {
                 className="mt-10 flex flex-wrap items-center gap-5"
               >
                 <div className="flex items-center gap-2">
-                  {[...Array(5)].map((_, i) => (
+                  {[1, 2, 3, 4, 5].map((star) => (
                     <Star
-                      key={i}
+                      key={star}
                       className={`w-6 h-6 ${
-                        i < 4
+                        star <= Math.round(product.average_rating || 0)
                           ? "text-amber-400 fill-amber-400"
                           : "text-[#d4d4d4]"
                       }`}
                     />
                   ))}
+
                   <span className="ml-1 text-xl font-bold text-[#3e2723]">
-                    4.8
+                    {product.average_rating || 0}
                   </span>
-                  <span className="text-[#7a8a82]">(247 reviews)</span>
+
+                  <span className="text-[#7a8a82]">
+                    ({product.ratings_count || 0} reviews)
+                  </span>
                 </div>
                 <span className="hidden sm:inline h-6 w-px bg-[#d7d2c8]" />
                 <span className="inline-flex items-center gap-2 rounded-full bg-[#e8f5e9] px-4 py-1.5 text-sm font-semibold text-[#1b4332]">
@@ -820,7 +752,7 @@ function ProductDetailContent({ product, onBack }) {
             </p>
           </div>
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {similarProducts.map((item, index) => (
+            {relatedProducts.map((item, index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -891,6 +823,15 @@ export default function ProductDetailsPage() {
   const [loading, setLoading] = useState(true);
 
   const pageRef = useRef(null);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+
+    if (ref) {
+      localStorage.setItem("affiliate_id", ref);
+      localStorage.setItem("affiliate_code", ref);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!slug) {

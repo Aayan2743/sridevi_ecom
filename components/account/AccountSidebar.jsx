@@ -9,6 +9,7 @@ import {
   Heart,
   Share2,
   LayoutDashboard,
+  Wallet,
   Lock,
   LogOut,
   Leaf,
@@ -21,15 +22,20 @@ const menu = [
   { label: "My Orders", path: "/account/orders", icon: Package },
   { label: "My Wishlist", path: "/account/wishlist", icon: Heart },
   { label: "Become Affiliate", path: "/account/affiliate", icon: Share2 },
-  {
-    label: "Affiliate Products",
-    path: "/account/affiliate/products",
-    icon: Package,
-  },
+  // {
+  //   label: "Affiliate Products",
+  //   path: "/account/affiliate/products",
+  //   icon: Package,
+  // },
   {
     label: "Affiliate dashboard",
     path: "/account/affiliate-dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Affiliate Wallet",
+    path: "/account/affiliate-dashboard/wallet",
+    icon: Wallet,
   },
   { label: "Change Password", path: "/account/change-password", icon: Lock },
 ];
@@ -79,7 +85,7 @@ export default function AccountSidebar() {
               Account
             </p>
             <p className="font-serif text-lg font-semibold leading-tight">
-              Nature &amp; you
+              Nature & you
             </p>
           </div>
         </div>
@@ -116,7 +122,9 @@ export default function AccountSidebar() {
                   >
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
-                  <span className="min-w-0 flex-1 font-medium">{item.label}</span>
+                  <span className="min-w-0 flex-1 font-medium">
+                    {item.label}
+                  </span>
                   <ChevronRight
                     className={`h-4 w-4 shrink-0 transition-transform ${
                       active
