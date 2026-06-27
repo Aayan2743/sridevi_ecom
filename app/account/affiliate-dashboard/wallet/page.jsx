@@ -294,6 +294,8 @@ export default function AffiliateWalletPage() {
 
   const totalDebits = Number(wallet?.total_withdrawn || 0);
 
+  const pendingWithdrawal = Number(wallet?.pending_withdrawal || 0);
+
   const canWithdraw = walletBalance >= AFFILIATE_REDEEM_THRESHOLD;
 
   if (showAffilityButton) {
@@ -378,10 +380,28 @@ export default function AffiliateWalletPage() {
                   <p className="mt-1 font-serif text-4xl font-bold text-sage-950">
                     ₹{walletBalance.toLocaleString("en-IN")}
                   </p>
-                  <p className="mt-1 text-sm text-sage-600">
-                    ₹{totalCredits.toLocaleString("en-IN")} earned · ₹
-                    {totalDebits.toLocaleString("en-IN")} withdrawn
-                  </p>
+                  <div className="mt-2 space-y-1 text-sm text-sage-600">
+                    <p>
+                      <span className="font-medium text-emerald-700">
+                        ₹{totalCredits.toLocaleString("en-IN")}
+                      </span>{" "}
+                      Earned
+                    </p>
+
+                    <p>
+                      <span className="font-medium text-amber-600">
+                        ₹{pendingWithdrawal.toLocaleString("en-IN")}
+                      </span>{" "}
+                      Pending Withdrawal
+                    </p>
+
+                    <p>
+                      <span className="font-medium text-red-600">
+                        ₹{totalDebits.toLocaleString("en-IN")}
+                      </span>{" "}
+                      Withdrawn
+                    </p>
+                  </div>
                 </div>
               </div>
 
